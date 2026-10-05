@@ -132,6 +132,79 @@ def finalize(body):
                  "cache_ttl_days": 90, **payload}
 
 
+def selftest():
+    """Run the staging-guide checks through the same code paths as live traffic.
+    Sessions created here are deleted afterwards; nothing visitor-related is stored."""
+    results = []
+    made = []
+
+    def run(tree, steps):
+        _, r = start({"tree": tree})
+        sid = r["session_id"]
+        made.append(sid)
+        last = None
+        for t, node, text in steps:
+            _, last = answer({"session_id": sid, "tree": t, "node_id": node, "answer_text": text})
+        return sid, last
+
+    def check(name, ok, detail=""):
+        results.append({"test": name, "status": "PASS" if ok else "FAIL", "detail": detail})
+
+    try:
+        # 1. OAK-1 single-tree narrowing
+        sid, r = run("oak", [("oak", "Q1", "Income too low"),
+                             ("oak", "Q2.Income", "Irregular/gig work")])
+        ph = r.get("pinhole", {})
+        check("1 OAK-1 narrowing",
+              r.get("status") == "PINHOLE" and "Income irregularity" in ph.get("root_cause", "")
+              and ph.get("confidence", 0) >= 0.85, ph.get("root_cause", ""))
+
+        # 4. share code + 5. AU context (on the Oak session above)
+        _, f = finalize({"session_id": sid, "tree": "oak"})
+        code = f.get("share_code", "")
+        got = SHARES.get(code, {}).get("prompt", {})
+        check("4 Share code", bool(re.fullmatch(r"[A-Z0-9]{6}", code)) and bool(got),
+              f"code format ok, retrievable, ttl {f.get('cache_ttl_days')} days")
+        text = f.get("prompt_text", "")
+        need = ["Centrelink", "13 23 17", "18,200", "Fair Work"]
+        miss = [k for k in need if k not in text]
+        check("5 AU context (Oak)", not miss, "missing: " + ", ".join(miss) if miss else "all present")
+
+        # 2. RECONCILE-1 cross-tree
+        sid2, r = run("gum", [("gum", "Q1", "We're fighting"), ("gum", "Q2.Fighting", "Parenting"),
+                              ("acacia", "Q1", "Exhausted but wired"),
+                              ("acacia", "Q2.Wired", "Gradually"), ("acacia", "Q3", "Rest")])
+        trees = sorted(r.get("trees", []))
+        check("2 RECONCILE-1 cross-tree", r.get("status") == "RECONCILE" and trees == ["acacia", "gum"],
+              r.get("root_cause", "") or r.get("status", ""))
+
+        # 3. ACACIA-2 crisis
+        _, r = run("acacia", [("acacia", "Q1", "Everything feels too much"),
+                              ("acacia", "Q4", "I'm not sure")])
+        check("3 ACACIA-2 crisis route",
+              r.get("status") == "CRISIS_ROUTE" and r.get("crisis", {}).get("lifeline") == "13 11 14"
+              and r.get("crisis", {}).get("beyond_blue") == "1300 22 4636",
+              "Lifeline 13 11 14 + Beyond Blue 1300 22 4636 returned, no prompt assembled")
+
+        # 6. Wattle TGA guardrail present in prompt
+        sidw, r = run("wattle", [("wattle", "Q1", "Energy/tiredness"), ("wattle", "Q2.Energy", "Recently"),
+                                 ("wattle", "Q2.Energy.Recent", "Stress increased")])
+        _, fw = finalize({"session_id": sidw, "tree": "wattle"})
+        check("6 Wattle TGA guardrail", "people explore" in fw.get("prompt_text", ""),
+              "guardrail wording present in Wattle prompt")
+
+        # 7. Same-input stability: re-running OAK-1 gives the same pinhole
+        _, r2 = run("oak", [("oak", "Q1", "Income too low"), ("oak", "Q2.Income", "Irregular/gig work")])
+        check("7 Repeatable result", r2.get("pinhole", {}).get("root_cause") == ph.get("root_cause"), "")
+    except Exception as e:
+        check("selftest runner", False, type(e).__name__)
+    finally:
+        for sid in made:
+            SESSIONS.pop(sid, None)
+    passed = sum(1 for x in results if x["status"] == "PASS")
+    return {"ok": passed == len(results), "passed": passed, "total": len(results), "results": results}
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "WiseMan/1.0"
 
@@ -160,6 +233,8 @@ class Handler(BaseHTTPRequestHandler):
         if path in ("/health", "/api/health"):
             return self._send(200, {"status": "operational", "trees": len(TREES),
                                     "version": "1.0-staging"})
+        if path == "/api/selftest":
+            return self._send(200, selftest())
         if path == "/api/entry":
             return self._send(200, {"ok": True, "entry": {
                 t: {"statement": TREES[t].get("entry_statement", ""),
