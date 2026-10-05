@@ -12,7 +12,7 @@ Endpoints
   POST /api/session/start    {tree}
   POST /api/session/answer   {session_id, tree, node_id, answer_text}
   POST /api/session/finalize {session_id, tree}
-  GET  /api/prompt/<code>
+  GET  /api/prompt/<code>        (share codes persist in Postgres when DATABASE_URL is set)
 """
 import json
 import os
@@ -32,7 +32,78 @@ MAX_SESSIONS = 5000
 TREES = load_trees_config()
 AU = load_au_context()
 SESSIONS = {}   # session_id -> {"engine": QueryEngine, "touched": float}
-SHARES = {}     # code -> {"prompt": dict, "expires": float}
+SHARES = {}     # in-memory fallback only (used when DATABASE_URL is unset or the DB errors)
+
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
+try:
+    import psycopg
+except ImportError:
+    psycopg = None
+USE_DB = bool(DATABASE_URL and psycopg)
+
+
+def _db():
+    return psycopg.connect(DATABASE_URL, connect_timeout=5)
+
+
+def _db_init():
+    """Create the share_codes table. Prompt text only, no visitor identifiers."""
+    if not USE_DB:
+        return
+    try:
+        with _db() as c:
+            c.execute("CREATE TABLE IF NOT EXISTS share_codes ("
+                      "code TEXT PRIMARY KEY, payload JSONB NOT NULL, expires_at TIMESTAMPTZ NOT NULL)")
+    except Exception as e:
+        print("ERROR share store init", type(e).__name__, flush=True)
+
+
+def share_exists(code):
+    if USE_DB:
+        try:
+            with _db() as c:
+                return c.execute("SELECT 1 FROM share_codes WHERE code=%s", (code,)).fetchone() is not None
+        except Exception as e:
+            print("ERROR share store read", type(e).__name__, flush=True)
+    return code in SHARES
+
+
+def share_put(code, payload):
+    """Returns True if stored durably."""
+    if USE_DB:
+        try:
+            with _db() as c:
+                c.execute("INSERT INTO share_codes (code, payload, expires_at) "
+                          "VALUES (%s, %s::jsonb, now() + make_interval(secs => %s))",
+                          (code, json.dumps(payload), SHARE_TTL))
+            return True
+        except Exception as e:
+            print("ERROR share store write", type(e).__name__, flush=True)
+    SHARES[code] = {"prompt": payload, "expires": time.time() + SHARE_TTL}
+    return False
+
+
+def share_get(code):
+    if USE_DB:
+        try:
+            with _db() as c:
+                row = c.execute("SELECT payload FROM share_codes WHERE code=%s AND expires_at > now()",
+                                (code,)).fetchone()
+                if row:
+                    return row[0]
+        except Exception as e:
+            print("ERROR share store read", type(e).__name__, flush=True)
+    hit = SHARES.get(code)
+    return hit["prompt"] if hit and hit["expires"] >= time.time() else None
+
+
+def share_sweep():
+    if USE_DB:
+        try:
+            with _db() as c:
+                c.execute("DELETE FROM share_codes WHERE expires_at < now()")
+        except Exception as e:
+            print("ERROR share store sweep", type(e).__name__, flush=True)
 
 CRISIS = {
     "lifeline": "13 11 14",
@@ -48,6 +119,7 @@ def _sweep():
         SESSIONS.pop(sid, None)
     for code in [c for c, v in SHARES.items() if v["expires"] < now]:
         SHARES.pop(code, None)
+    share_sweep()
 
 
 def _node_view(tree, node_id):
@@ -124,10 +196,10 @@ def finalize(body):
     out = eng.finalize_prompt(tree)
     payload = {"tree": tree_name, "pinhole": _pinhole_dict(out.pinhole),
                "prompt_text": out.prompt_text, "feedback_options": out.feedback_options}
-    while out.share_code in SHARES:           # avoid collisions
+    while share_exists(out.share_code):       # avoid collisions
         out.share_code = eng._generate_share_code()
-    SHARES[out.share_code] = {"prompt": payload, "expires": time.time() + SHARE_TTL}
-    return 200, {"ok": True, "share_code": out.share_code,
+    durable = share_put(out.share_code, payload)
+    return 200, {"ok": True, "share_code": out.share_code, "durable": durable,
                  "share_url": f"https://thequeryleaf.com.au/prompt/{out.share_code}",
                  "cache_ttl_days": 90, **payload}
 
@@ -162,9 +234,10 @@ def selftest():
         # 4. share code + 5. AU context (on the Oak session above)
         _, f = finalize({"session_id": sid, "tree": "oak"})
         code = f.get("share_code", "")
-        got = SHARES.get(code, {}).get("prompt", {})
+        got = share_get(code) or {}
         check("4 Share code", bool(re.fullmatch(r"[A-Z0-9]{6}", code)) and bool(got),
-              f"code format ok, retrievable, ttl {f.get('cache_ttl_days')} days")
+              f"code format ok, retrievable, ttl {f.get('cache_ttl_days')} days, "
+              f"store={'postgres' if USE_DB and f.get('durable') else 'MEMORY (not durable)'}")
         text = f.get("prompt_text", "")
         need = ["Centrelink", "13 23 17", "18,200", "Fair Work"]
         miss = [k for k in need if k not in text]
@@ -242,10 +315,10 @@ class Handler(BaseHTTPRequestHandler):
         m = re.fullmatch(r"/api/prompt/([A-Za-z0-9]{6})", path)
         if m:
             _sweep()
-            hit = SHARES.get(m.group(1).upper())
+            hit = share_get(m.group(1).upper())
             if not hit:
                 return self._send(404, {"ok": False, "error": "code not found or expired"})
-            return self._send(200, {"ok": True, **hit["prompt"]})
+            return self._send(200, {"ok": True, **hit})
         self._send(404, {"ok": False, "error": "not found"})
 
     def do_POST(self):
@@ -272,5 +345,7 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "8080"))
+    _db_init()
+    print(f"Share store: {'postgres' if USE_DB else 'memory'}", flush=True)
     print(f"Engine initialized. Trees: {list(TREES)}. Listening on {port}", flush=True)
     ThreadingHTTPServer(("0.0.0.0", port), Handler).serve_forever()
