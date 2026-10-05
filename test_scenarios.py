@@ -37,6 +37,14 @@ class TestScenario:
             else:
                 self.passed = pinhole is not None
 
+            # Fixed 2026-10-05 (ISSUE-001): reconciliation scenarios must actually reconcile.
+            if self.should_reconcile:
+                rec = engine.detect_reconciliation()
+                if not rec or not rec[1]:
+                    self.passed = False
+                    self.result = f"{pinhole} | NO RECONCILIATION RETURNED"
+                    return False
+
             self.result = pinhole
             return self.passed
         except Exception as e:

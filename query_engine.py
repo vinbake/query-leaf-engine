@@ -247,10 +247,11 @@ class QueryEngine:
         identified = {t: p for t, p in self.pinholes.items() if p is not None}
 
         # Pattern 1: Gum + Acacia: "Fighting about money" + "Sleeping badly"
+        # Fixed 2026-10-05 (ISSUE-001): match on the tree pair, like patterns 2 and 3.
+        # The old keyword test ("fighting" / "sleep" in the pinhole text) never matched
+        # the real pinhole wording. A crisis route is never reconciled into a narrative.
         if Tree.GUM in identified and Tree.ACACIA in identified:
-            gum_signal = "fighting" in identified[Tree.GUM].root_cause.lower()
-            acacia_signal = "sleep" in identified[Tree.ACACIA].root_cause.lower()
-            if gum_signal and acacia_signal:
+            if identified[Tree.ACACIA].root_cause != "CRISIS_ROUTE":
                 return (
                     [Tree.GUM, Tree.ACACIA],
                     "Financial stress → relationship tension → poor sleep. Address stress, not symptoms."
