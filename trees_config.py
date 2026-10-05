@@ -1,6 +1,6 @@
 """
-Trees Config Loader — The Query Leaf
-Loads trees_config.json from the same directory.
+Tree configuration loader
+Reads trees_config.json and returns the tree structure
 """
 
 import json
@@ -8,23 +8,19 @@ import os
 
 
 def load_trees_config() -> dict:
-    """Load and return the trees configuration JSON."""
-    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "trees_config.json")
-    with open(config_path, "r", encoding="utf-8") as f:
-        return json.load(f)
+    """Load decision tree configuration from JSON"""
+    config_path = os.path.join(os.path.dirname(__file__), 'trees_config.json')
+
+    try:
+        with open(config_path, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        raise FileNotFoundError(f"trees_config.json not found at {config_path}")
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid JSON in trees_config.json: {e}")
 
 
-def get_tree_names(config: dict) -> list:
-    """Return list of available tree names."""
-    return list(config.keys())
-
-
-def get_node(config: dict, tree: str, node_id: str) -> dict:
-    """Return a specific node from a tree, or raise KeyError."""
-    tree_data = config.get(tree.lower())
-    if not tree_data:
-        raise KeyError(f"Unknown tree: {tree}")
-    node = tree_data.get(node_id)
-    if not node:
-        raise KeyError(f"Unknown node: {node_id} in tree: {tree}")
-    return node
+if __name__ == "__main__":
+    config = load_trees_config()
+    print(f"✓ Trees config loaded successfully")
+    print(f"Trees available: {list(config.keys())}")

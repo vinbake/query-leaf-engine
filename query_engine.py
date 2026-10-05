@@ -111,8 +111,18 @@ class QueryEngine:
                 return "RECONCILE"
             return "PINHOLE"
 
-        # 3. Return next node
+        # 3. Get next node from routes
         next_node = current_node.get("routes", {}).get(answer.user_response)
+
+        # 4. Handle special reconciliation route markers
+        if next_node and next_node.startswith("RECONCILE"):
+            # Trigger reconciliation detection
+            reconciliation = self.detect_reconciliation()
+            if reconciliation:
+                return "RECONCILE"
+            # If no reconciliation signal, treat as pinhole not found yet
+            return None
+
         return next_node if next_node else None
 
     def finalize_prompt(self, tree: Tree) -> PromptOutput:
@@ -184,7 +194,14 @@ class QueryEngine:
         return SafetyLevel.SAFE
 
     def _crisis_route(self) -> str:
-        """Return crisis help indicator"""
+        """Return crisis help indicator and set crisis pinhole"""
+        crisis_pinhole = Pinhole(
+            tree=Tree.ACACIA,
+            root_cause="CRISIS_ROUTE",
+            confidence=1.0,
+            signals=["Q4"]
+        )
+        self.pinholes[Tree.ACACIA] = crisis_pinhole
         return "CRISIS_ROUTE"
 
     def _detect_pinhole(self, tree: Tree, node_id: str, response: str) -> Optional[Pinhole]:

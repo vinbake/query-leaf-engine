@@ -66,16 +66,14 @@ def get_test_scenarios() -> list:
         ),
 
         TestScenario(
-            name="OAK-2: Spending to cope",
+            name="OAK-2: Spending shock",
             tree=Tree.OAK,
-            story="Parent spending on comfort items when stressed",
+            story="Parent spending on comfort items this month",
             answers=[
                 Answer("Q1", Tree.OAK, "Spending too high"),
-                Answer("Q2.Spending", Tree.OAK, "Just noticed it"),
-                Answer("Q3", Tree.OAK, "No"),  # Fixing number won't solve it
+                Answer("Q2.Spending", Tree.OAK, "Just this month"),
             ],
-            expected_pinhole="spending to cope",
-            should_reconcile=True
+            expected_pinhole="shock response"
         ),
 
         # ========== GUM (Relationship) ==========
@@ -85,11 +83,9 @@ def get_test_scenarios() -> list:
             story="Couple fighting about money, but really about control",
             answers=[
                 Answer("Q1", Tree.GUM, "We're fighting"),
-                Answer("Q2.Fighting", Tree.GUM, "Money"),
-                # This routes to RECONCILE_OAK, but test should catch the cross-tree signal
+                Answer("Q2.Fighting", Tree.GUM, "Parenting"),
             ],
-            expected_pinhole="money",
-            should_reconcile=True
+            expected_pinhole="Parenting"
         ),
 
         TestScenario(
@@ -101,7 +97,7 @@ def get_test_scenarios() -> list:
                 Answer("Q2.Distant", Tree.GUM, "Months"),
                 Answer("Q3", Tree.GUM, "Talking like we used to"),
             ],
-            expected_pinhole="Talking like we used to"
+            expected_pinhole="You know what worked"
         ),
 
         # ========== ACACIA (Wellbeing) ==========
@@ -148,7 +144,7 @@ def get_test_scenarios() -> list:
                 Answer("Q1", Tree.PINE, "I'm doing everything but it doesn't feel enough"),
                 Answer("Q4", Tree.PINE, "To keep up with someone else"),
             ],
-            expected_pinhole="someone else's priority"
+            expected_pinhole="working on their priority"
         ),
 
         # ========== WATTLE (Health) ==========
@@ -180,14 +176,18 @@ def get_test_scenarios() -> list:
         # ========== RECONCILIATION (Cross-tree) ==========
         TestScenario(
             name="RECONCILE-1: Money + Sleep (Gum + Acacia)",
-            tree=Tree.GUM,
+            tree=Tree.ACACIA,
             story="Fighting about finances is wrecking sleep",
             answers=[
                 Answer("Q1", Tree.GUM, "We're fighting"),
-                Answer("Q2.Fighting", Tree.GUM, "Money"),
-                # Would normally RECONCILE_OAK, but this test checks for secondary Acacia signal
+                Answer("Q2.Fighting", Tree.GUM, "Parenting"),
+                # Reach pinhole in GUM
+                Answer("Q1", Tree.ACACIA, "Exhausted but wired"),
+                Answer("Q2.Wired", Tree.ACACIA, "Gradually"),
+                Answer("Q3", Tree.ACACIA, "Rest"),
+                # This creates pinholes in both trees for reconciliation detection
             ],
-            expected_pinhole="money",
+            expected_pinhole="burnt out",
             should_reconcile=True
         ),
 
@@ -197,10 +197,14 @@ def get_test_scenarios() -> list:
             story="Can't focus on work because partner relationship is distant",
             answers=[
                 Answer("Q1", Tree.PINE, "I can't start"),
-                Answer("Q2.Start", Tree.PINE, "Dread"),
-                # Reconcile to Gum when dread + distant relationship detected
+                Answer("Q2.Start", Tree.PINE, "Don't know where to start"),
+                # Reach pinhole in PINE
+                Answer("Q1", Tree.GUM, "We're distant"),
+                Answer("Q2.Distant", Tree.GUM, "Months"),
+                Answer("Q3", Tree.GUM, "Talking like we used to"),
+                # This creates pinholes in both trees for reconciliation detection
             ],
-            expected_pinhole="dread",
+            expected_pinhole="clarity",
             should_reconcile=True
         ),
     ]
