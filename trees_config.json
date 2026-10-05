@@ -1,0 +1,592 @@
+{
+  "oak": {
+    "name": "Oak (Finance) — Magpie Tree",
+    "entry_statement": "Money is tight, or I'm worried about something financial.",
+    "bird": "Magpie",
+    "Q1": {
+      "question": "What's the money problem?",
+      "type": "multiple_choice",
+      "answers": [
+        "Income too low",
+        "Spending too high",
+        "Debt",
+        "Don't know where it goes",
+        "One-off shock"
+      ],
+      "routes": {
+        "Income too low": "Q2.Income",
+        "Spending too high": "Q2.Spending",
+        "Debt": "Q2.Debt",
+        "Don't know where it goes": "Q2.Spending",
+        "One-off shock": "Q3"
+      }
+    },
+    "Q2.Income": {
+      "question": "Is the income actually too low, or does it feel that way?",
+      "type": "multiple_choice",
+      "answers": [
+        "Actually below living costs",
+        "Looks OK on paper but doesn't feel real",
+        "Irregular/gig work",
+        "Recently dropped"
+      ],
+      "routes": {
+        "Actually below living costs": "Q3",
+        "Looks OK on paper but doesn't feel real": "Q3",
+        "Irregular/gig work": "PINHOLE",
+        "Recently dropped": "PINHOLE"
+      },
+      "pinholes": {
+        "Irregular/gig work": "Income irregularity is the real problem, not total amount — you need a buffer plan",
+        "Recently dropped": "Income shock is the real issue. Recovery takes time; don't blame yourself."
+      }
+    },
+    "Q2.Spending": {
+      "question": "How long has this been going on?",
+      "type": "multiple_choice",
+      "answers": [
+        "Just this month",
+        "A few months",
+        "Years",
+        "Just noticed it"
+      ],
+      "routes": {
+        "Just this month": "PINHOLE",
+        "A few months": "Q3",
+        "Years": "Q3",
+        "Just noticed it": "Q3"
+      },
+      "pinholes": {
+        "Just this month": "This is a shock response, not a systemic problem. Let this month settle."
+      }
+    },
+    "Q2.Debt": {
+      "question": "Is debt the problem or a symptom?",
+      "type": "multiple_choice",
+      "answers": [
+        "Debt itself (interest/repayment stress)",
+        "Using debt to cover something else",
+        "Both"
+      ],
+      "routes": {
+        "Debt itself (interest/repayment stress)": "PINHOLE",
+        "Using debt to cover something else": "Q3",
+        "Both": "Q3"
+      },
+      "pinholes": {
+        "Debt itself (interest/repayment stress)": "Your real problem is the repayment plan, not the debt itself. Restructure, don't panic."
+      }
+    },
+    "Q3": {
+      "question": "If we fixed the number — best case, income up or spending down — would that solve the fight?",
+      "type": "multiple_choice",
+      "answers": [
+        "Yes",
+        "No",
+        "Partly"
+      ],
+      "routes": {
+        "Yes": "Q4",
+        "No": "RECONCILE_GUM_OR_ACACIA",
+        "Partly": "RECONCILE_GUM_OR_ACACIA"
+      },
+      "pinholes": {
+        "Yes": "The problem is concrete and solvable. Let's make a plan."
+      }
+    },
+    "Q4": {
+      "question": "What's one thing that would feel like relief right now?",
+      "type": "multiple_choice",
+      "answers": [
+        "Knowing I'm not alone",
+        "A plan",
+        "Immediate cash",
+        "A conversation with my partner",
+        "Something else"
+      ],
+      "stops_narrowing": true,
+      "pinholes": {
+        "Knowing I'm not alone": "You're carrying this alone. The first step is naming it out loud.",
+        "A plan": "You need clarity, not more money. Structure comes first.",
+        "Immediate cash": "Short-term relief is needed, but that's not a plan. Both matter.",
+        "A conversation with my partner": "This is the real blocker. You haven't looked at the numbers together.",
+        "Something else": "That's your signal. Build toward it this week."
+      }
+    }
+  },
+  "gum": {
+    "name": "Gum (Relationship) — Parrot Tree",
+    "entry_statement": "Something's off with my partner / family / a close relationship.",
+    "bird": "Parrot",
+    "Q1": {
+      "question": "What's the relationship problem?",
+      "type": "multiple_choice",
+      "answers": [
+        "We're fighting",
+        "We're distant",
+        "I don't feel heard",
+        "Trust broke",
+        "I don't know how to talk about it"
+      ],
+      "routes": {
+        "We're fighting": "Q2.Fighting",
+        "We're distant": "Q2.Distant",
+        "I don't feel heard": "PINHOLE",
+        "Trust broke": "Q2.Trust",
+        "I don't know how to talk about it": "Q4"
+      }
+    },
+    "Q2.Fighting": {
+      "question": "What do you fight about?",
+      "type": "multiple_choice",
+      "answers": [
+        "The same thing over and over",
+        "Different things, no pattern",
+        "Money",
+        "Parenting",
+        "Time/priorities"
+      ],
+      "routes": {
+        "The same thing over and over": "Q2.Fighting.Same",
+        "Different things, no pattern": "PINHOLE",
+        "Money": "RECONCILE_OAK",
+        "Parenting": "PINHOLE",
+        "Time/priorities": "PINHOLE"
+      },
+      "pinholes": {
+        "Different things, no pattern": "You're fighting to fight. Something else is really wrong.",
+        "Parenting": "Parenting stress breaks relationships. You need a team, not an opponent.",
+        "Time/priorities": "One of you changed and the other didn't. Start with 'I've noticed you're different lately'."
+      }
+    },
+    "Q2.Fighting.Same": {
+      "question": "When you fight about it, what are you *actually* upset about?",
+      "type": "multiple_choice",
+      "answers": [
+        "The thing itself",
+        "That they don't understand",
+        "That they don't care",
+        "That I feel trapped"
+      ],
+      "routes": {
+        "The thing itself": "PINHOLE",
+        "That they don't understand": "RECONCILE_ACACIA",
+        "That they don't care": "PINHOLE",
+        "That I feel trapped": "RECONCILE_ACACIA"
+      },
+      "pinholes": {
+        "The thing itself": "You're fighting about the real thing. That's good—at least you know.",
+        "That they don't care": "Your anger is the real problem. They've given up listening.",
+        "That I feel trapped": "Feeling heard is a wellbeing issue, not a relationship issue."
+      }
+    },
+    "Q2.Distant": {
+      "question": "How long has this been going on?",
+      "type": "multiple_choice",
+      "answers": [
+        "Recently",
+        "Months",
+        "Since an event",
+        "Feels like always"
+      ],
+      "routes": {
+        "Recently": "Q3",
+        "Months": "Q3",
+        "Since an event": "Q3",
+        "Feels like always": "PINHOLE"
+      },
+      "pinholes": {
+        "Feels like always": "You're not compatible as you are now. That's the conversation to have."
+      }
+    },
+    "Q2.Trust": {
+      "question": "What broke it?",
+      "type": "multiple_choice",
+      "answers": [
+        "An affair",
+        "A lie",
+        "A broken promise",
+        "Neglect over time",
+        "I'm not sure"
+      ],
+      "routes": {
+        "An affair": "PINHOLE",
+        "A lie": "Q3",
+        "A broken promise": "Q3",
+        "Neglect over time": "Q3",
+        "I'm not sure": "Q3"
+      },
+      "pinholes": {
+        "An affair": "This needs professional help. Relationships Australia 1300 364 277. Do that first."
+      }
+    },
+    "Q3": {
+      "question": "What would 'better' look like?",
+      "type": "multiple_choice",
+      "answers": [
+        "Talking like we used to",
+        "Less tension",
+        "Feeling like a team again",
+        "Knowing what's wrong so we can fix it"
+      ],
+      "routes": {
+        "Talking like we used to": "PINHOLE",
+        "Less tension": "PINHOLE",
+        "Feeling like a team again": "Q4",
+        "Knowing what's wrong so we can fix it": "Q4"
+      },
+      "pinholes": {
+        "Talking like we used to": "You know what worked. Start there.",
+        "Less tension": "Tension is the signal. Stop trying to reduce it; ask what it's telling you."
+      }
+    },
+    "Q4": {
+      "question": "Have you told them this isn't OK?",
+      "type": "multiple_choice",
+      "answers": [
+        "Not yet",
+        "They know but nothing changes",
+        "I've said it but I don't think they heard me"
+      ],
+      "stops_narrowing": true,
+      "pinholes": {
+        "Not yet": "You're waiting for them to notice. They won't. You have to speak first.",
+        "They know but nothing changes": "This is the real problem—they're choosing not to. That's a decision you need to make about.",
+        "I've said it but I don't think they heard me": "Being heard/seen is a core wellbeing signal. Start there, not with fixing the relationship."
+      }
+    }
+  },
+  "acacia": {
+    "name": "Acacia (Wellbeing) — Owl Tree",
+    "entry_statement": "I'm stressed, burnt out, not sleeping, or something feels off.",
+    "bird": "Owl",
+    "Q1": {
+      "question": "What's going on?",
+      "type": "multiple_choice",
+      "answers": [
+        "I can't sleep",
+        "I'm exhausted but wired",
+        "Everything feels too much",
+        "I can't focus",
+        "Anxious all the time"
+      ],
+      "routes": {
+        "I can't sleep": "Q2.Sleep",
+        "I'm exhausted but wired": "Q2.Wired",
+        "Everything feels too much": "Q3",
+        "I can't focus": "Q3",
+        "Anxious all the time": "Q3"
+      }
+    },
+    "Q2.Sleep": {
+      "question": "When you try to sleep, what happens?",
+      "type": "multiple_choice",
+      "answers": [
+        "Mind won't stop",
+        "Physical restlessness",
+        "Wake in the night and can't go back",
+        "Dread about something specific"
+      ],
+      "routes": {
+        "Mind won't stop": "Q3",
+        "Physical restlessness": "Q3",
+        "Wake in the night and can't go back": "Q3",
+        "Dread about something specific": "PINHOLE"
+      },
+      "pinholes": {
+        "Dread about something specific": "Your sleep is warning you about something. Listen to it."
+      }
+    },
+    "Q2.Wired": {
+      "question": "When did this start?",
+      "type": "multiple_choice",
+      "answers": [
+        "Out of nowhere",
+        "After an event",
+        "Gradually",
+        "Months",
+        "Years"
+      ],
+      "routes": {
+        "Out of nowhere": "PINHOLE",
+        "After an event": "Q3",
+        "Gradually": "Q3",
+        "Months": "Q5",
+        "Years": "Q5"
+      },
+      "pinholes": {
+        "Out of nowhere": "Check: caffeine, medication, exercise changes. One thing probably shifted."
+      }
+    },
+    "Q3": {
+      "question": "What's the one thing that would make the most difference right now?",
+      "type": "multiple_choice",
+      "answers": [
+        "Rest",
+        "Someone to talk to",
+        "A break",
+        "Fixing the thing that's stressing me",
+        "Understanding why I feel this way"
+      ],
+      "stops_narrowing": true,
+      "pinholes": {
+        "Rest": "You're burnt out, not broken — you need permission to rest, not a cure.",
+        "Someone to talk to": "Being heard is the first step. Find one person.",
+        "A break": "Your nervous system needs a reset. Take it.",
+        "Fixing the thing that's stressing me": "First regulate, then solve. Sleep/movement first, solve second.",
+        "Understanding why I feel this way": "Anxiety is your signal that something needs to change — what is it?"
+      }
+    },
+    "Q4": {
+      "question": "Are you safe? Is anyone else at risk?",
+      "type": "multiple_choice",
+      "crisis_detection": true,
+      "answers": [
+        "Yes, safe",
+        "Thoughts of harm but no plan",
+        "I'm not sure"
+      ],
+      "routes": {
+        "Yes, safe": "Q5",
+        "Thoughts of harm but no plan": "CRISIS_ROUTE",
+        "I'm not sure": "CRISIS_ROUTE"
+      }
+    },
+    "Q5": {
+      "question": "Is this temporary (tied to something) or ongoing (chronic stress)?",
+      "type": "multiple_choice",
+      "answers": [
+        "Temporary",
+        "Ongoing",
+        "It was temporary but now it's stuck"
+      ],
+      "stops_narrowing": true,
+      "pinholes": {
+        "Temporary": "You know what to wait for. This will pass.",
+        "Ongoing": "This is your baseline. Chronic stress needs a structural change, not a fix.",
+        "It was temporary but now it's stuck": "You've been in this state so long it feels normal. It's not. Reset is possible."
+      }
+    }
+  },
+  "pine": {
+    "name": "Pine (Productivity) — Eagle Tree",
+    "entry_statement": "I can't get things done, I'm procrastinating, or I'm stuck on something.",
+    "bird": "Eagle",
+    "Q1": {
+      "question": "What's the productivity problem?",
+      "type": "multiple_choice",
+      "answers": [
+        "I can't start",
+        "I start but don't finish",
+        "I'm doing everything but it doesn't feel enough",
+        "I'm too busy to do the things that matter"
+      ],
+      "routes": {
+        "I can't start": "Q2.Start",
+        "I start but don't finish": "Q2.Finish",
+        "I'm doing everything but it doesn't feel enough": "Q4",
+        "I'm too busy to do the things that matter": "Q3"
+      }
+    },
+    "Q2.Start": {
+      "question": "What stops you from starting?",
+      "type": "multiple_choice",
+      "answers": [
+        "Don't know where to start",
+        "Perfectionism",
+        "It feels too big",
+        "Distraction",
+        "Dread"
+      ],
+      "routes": {
+        "Don't know where to start": "PINHOLE",
+        "Perfectionism": "Q4",
+        "It feels too big": "PINHOLE",
+        "Distraction": "Q4",
+        "Dread": "Q4"
+      },
+      "pinholes": {
+        "Don't know where to start": "The real problem is clarity, not willpower. Break it into smaller pieces.",
+        "It feels too big": "Scale it down. Not the project—your first step."
+      }
+    },
+    "Q2.Finish": {
+      "question": "What happens when you start?",
+      "type": "multiple_choice",
+      "answers": [
+        "I lose interest",
+        "Life gets in the way",
+        "I second-guess myself",
+        "I get distracted"
+      ],
+      "routes": {
+        "I lose interest": "Q4",
+        "Life gets in the way": "Q3",
+        "I second-guess myself": "PINHOLE",
+        "I get distracted": "Q3"
+      },
+      "pinholes": {
+        "I second-guess myself": "You don't trust yourself. That's the real blocker, not the task."
+      }
+    },
+    "Q3": {
+      "question": "If I removed one thing from your week, what would it be?",
+      "type": "multiple_choice",
+      "answers": [
+        "Something you're doing for someone else",
+        "Something you feel obligated to do",
+        "Something you're bad at",
+        "Something you secretly don't want to do"
+      ],
+      "routes": {
+        "Something you're doing for someone else": "PINHOLE",
+        "Something you feel obligated to do": "PINHOLE",
+        "Something you're bad at": "Q4",
+        "Something you secretly don't want to do": "RECONCILE_ACACIA"
+      },
+      "pinholes": {
+        "Something you're doing for someone else": "You're carrying their priority. Stop. The relief you'd feel is the signal.",
+        "Something you feel obligated to do": "Obligation is burning you out. Permission to stop is the first step."
+      }
+    },
+    "Q4": {
+      "question": "What's your actual goal here?",
+      "type": "multiple_choice",
+      "answers": [
+        "To get it done",
+        "To do it well",
+        "To prove I can",
+        "To keep up with someone else",
+        "To just get it off my mind"
+      ],
+      "stops_narrowing": true,
+      "pinholes": {
+        "To get it done": "Finish line is the goal. Speed up, cut scope, move on.",
+        "To do it well": "Excellence is the goal. Perfectionism is OK—just set one bar.",
+        "To prove I can": "Goal isn't the task — it's something else. What are you trying to prove?",
+        "To keep up with someone else": "You're working on their priority. Whose is it really?",
+        "To just get it off my mind": "Completion is relief. Get it done, imperfect, then move on."
+      }
+    }
+  },
+  "wattle": {
+    "name": "Wattle (Health) — Honeyeater Tree",
+    "entry_statement": "Something about my health or body is worrying me, or I feel off.",
+    "bird": "Honeyeater",
+    "Q1": {
+      "question": "What's the health concern?",
+      "type": "multiple_choice",
+      "answers": [
+        "Energy/tiredness",
+        "Weight",
+        "Illness/infection",
+        "Pain",
+        "Something's off but I can't name it"
+      ],
+      "routes": {
+        "Energy/tiredness": "Q2.Energy",
+        "Weight": "PINHOLE",
+        "Illness/infection": "Q3",
+        "Pain": "Q3",
+        "Something's off but I can't name it": "Q3"
+      },
+      "pinholes": {
+        "Weight": "Weight is often a symptom of stress, sleep, or movement changes—not the problem itself."
+      }
+    },
+    "Q2.Energy": {
+      "question": "When did you start feeling tired?",
+      "type": "multiple_choice",
+      "answers": [
+        "Always been this way",
+        "Recently",
+        "After an event/change",
+        "Gradually over months"
+      ],
+      "routes": {
+        "Always been this way": "Q3",
+        "Recently": "Q2.Energy.Recent",
+        "After an event/change": "Q2.Energy.Recent",
+        "Gradually over months": "Q3"
+      }
+    },
+    "Q2.Energy.Recent": {
+      "question": "What changed?",
+      "type": "multiple_choice",
+      "answers": [
+        "Sleep got worse",
+        "Stress increased",
+        "Exercise dropped",
+        "Stopped enjoying things",
+        "Diet changed",
+        "Medication started"
+      ],
+      "stops_narrowing": true,
+      "pinholes": {
+        "Sleep got worse": "Sleep drives everything. Fix sleep first, tiredness improves.",
+        "Stress increased": "Stress + tiredness = normal. Stress is the lever.",
+        "Exercise dropped": "Movement is medicine. One walk per day, start there.",
+        "Stopped enjoying things": "Loss of joy is a signal. Something shifted. What was it?",
+        "Diet changed": "Nutrition matters. Try adding one thing back.",
+        "Medication started": "Talk to your doctor. Tiredness is a side effect they can adjust."
+      }
+    },
+    "Q3": {
+      "question": "Have you seen a doctor about this?",
+      "type": "multiple_choice",
+      "answers": [
+        "Not yet",
+        "They said it's normal",
+        "They found something",
+        "Nothing showed up but I still feel off"
+      ],
+      "routes": {
+        "Not yet": "PINHOLE",
+        "They said it's normal": "PINHOLE",
+        "They found something": "PINHOLE",
+        "Nothing showed up but I still feel off": "Q4"
+      },
+      "pinholes": {
+        "Not yet": "See a doctor first. This conversation is second.",
+        "They said it's normal": "If they said it's normal, trust that. Your feelings are real; the pathology isn't.",
+        "They found something": "You have a diagnosis. The next step is your pathway—conventional, alternative, or both."
+      }
+    },
+    "Q4": {
+      "question": "What would actually help?",
+      "type": "multiple_choice",
+      "answers": [
+        "Rest",
+        "Someone to talk to",
+        "Moving differently",
+        "Changing what I eat",
+        "Understanding what's happening"
+      ],
+      "stops_narrowing": true,
+      "pinholes": {
+        "Rest": "Rest is medicine. Take it.",
+        "Someone to talk to": "Feeling heard helps. Find one person.",
+        "Moving differently": "Movement is medicine. Different people start in different places.",
+        "Changing what I eat": "Small changes often matter more than one big fix.",
+        "Understanding what's happening": "Multiple small changes (sleep, movement, food) often matter more than one diagnosis."
+      }
+    },
+    "Q5": {
+      "question": "What's your preferred first step?",
+      "type": "multiple_choice",
+      "answers": [
+        "See a doctor",
+        "Try a natural approach",
+        "Both",
+        "Something else"
+      ],
+      "stops_narrowing": true,
+      "pinholes": {
+        "See a doctor": "Conventional medicine first. Melbourne and Sydney have excellent GPs.",
+        "Try a natural approach": "People explore different pathways. Start with what resonates.",
+        "Both": "Many people do both. You might explore conventional medicine, traditional Chinese medicine, nutritional changes, movement practice.",
+        "Something else": "That intuition is worth following. What are you drawn to?"
+      }
+    }
+  }
+}
