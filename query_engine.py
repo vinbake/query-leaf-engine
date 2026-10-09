@@ -155,7 +155,7 @@ class QueryEngine:
         return PromptOutput(
             pinhole=pinhole,
             prompt_text=prompt_text,
-            au_context=json.dumps(au_context),
+            au_context=self._format_au_context(au_context),
             share_code=share_code,
             feedback_options=feedback_options
         )
@@ -293,6 +293,67 @@ class QueryEngine:
                 situation_parts.append(f"{answer.node_id}: {answer.user_response}")
         return " | ".join(situation_parts)
 
+    def _format_au_context(self, au_context: Dict) -> str:
+        """
+        Render the AU context data layer (D29's swappable services/figures,
+        au_context.py) as plain sentences for the visitor-facing prompt.
+
+        The data layer also carries internal-only fields — 'prompt_guidance'
+        and 'tga_guardrail' — that steer how THIS function writes the
+        sentence. They are never echoed verbatim to the visitor; doing so
+        (the previous json.dumps(au_context) behaviour) leaked raw Python
+        dict syntax into the prompt and, for Wattle, made the TGA self-test
+        pass by accident on the guardrail's own instruction text rather
+        than on real guardrail-compliant wording in context. Fixed 2026-10-09.
+        """
+        if not au_context:
+            return "No specific Australian services identified for this topic."
+
+        def fmt(s: Dict) -> str:
+            contact = s.get("phone") or s.get("url")
+            desc = s.get("description") or s.get("note")
+            tail = " — ".join(x for x in [contact, desc] if x)
+            return f"{s.get('name', '')} ({tail})" if tail else s.get("name", "")
+
+        lines = []
+
+        if "tga_guardrail" in au_context:
+            # Wattle (Health): never state a modality "treats" or "cures" a condition —
+            # legal TGA boundary. Clinical/Medicare pathways and non-rebated
+            # modalities are named separately with their real standing.
+            pathways = au_context.get("pathways", [])
+            clinical = [p for p in pathways if p.get("name") != "Naturopath/TCM"]
+            alt = [p for p in pathways if p.get("name") == "Naturopath/TCM"]
+            if clinical:
+                lines.append("For practical options, people explore things such as "
+                              + "; ".join(fmt(p) for p in clinical) + ".")
+            if alt:
+                lines.append("Some people also use " + "; ".join(fmt(p) for p in alt)
+                              + " — not Medicare-rebated, and efficacy claims are limited under TGA regulation.")
+        else:
+            for key in ("services", "crisis_services", "regular_services", "employment"):
+                items = au_context.get(key)
+                if items:
+                    lines.append("; ".join(fmt(s) for s in items) + ".")
+
+        fy = au_context.get("financial_year_info")
+        if fy:
+            lines.append(
+                f"For {fy.get('year', 'this financial year')}, the tax-free threshold is "
+                f"{fy.get('tax_free_threshold', 'not set')} and the super contribution cap is "
+                f"{fy.get('super_contribution_cap', 'not set')}."
+            )
+
+        sleep = au_context.get("sleep_specific")
+        if sleep:
+            lines.extend(v for v in sleep.values() if isinstance(v, str))
+
+        note = au_context.get("cultural_note")
+        if note:
+            lines.append(note)
+
+        return " ".join(lines) if lines else "No specific Australian services identified for this topic."
+
     def _assemble_prompt(self, pinhole: Pinhole, situation: str, au_context: Dict) -> str:
         """
         Assemble rich prompt per spec structure:
@@ -311,7 +372,7 @@ Specific ask:
 Help me understand what's really happening here and what one step I could take this week.
 
 Australian context:
-{json.dumps(au_context, indent=2)}
+{self._format_au_context(au_context)}
 
 Important: Keep this practical and specific to my situation.
 """.strip()
