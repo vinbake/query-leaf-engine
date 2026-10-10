@@ -179,6 +179,26 @@ def main():
     check("A reading for an earlier day leaves later rows out",
           counts.metrics((D0 + datetime.timedelta(days=10)).isoformat())["totals"]["prompts"] == m2["totals"]["prompts"])
 
+    # ---------- the counting start day ----------
+    full = counts.metrics()
+    counts.GATES_FROM = D0 + datetime.timedelta(days=3)
+    ms = counts.metrics()
+    check("Start day: browsers first seen earlier leave G1", ms["counting_from"] == (D0 + datetime.timedelta(days=3)).isoformat()
+          and ms["g1"]["eligible_first_visits"] == 2 and ms["g1"]["returned"] == 1 and ms["g1"]["rate_percent"] == 50.0,
+          json.dumps(ms["g1"]))
+    check("Start day: earlier rows are listed apart, later rows still count",
+          ms["before_start"]["visits"] == 14 and ms["before_start"]["interactions"] == 0
+          and ms["totals"] == full["totals"] and ms["qa"] == full["qa"], json.dumps(ms["before_start"]))
+    counts.GATES_FROM = D0 + datetime.timedelta(days=11)
+    ml = counts.metrics()
+    check("Start day: prompts made earlier leave G2 and G3", ml["totals"]["prompts"] == 1
+          and ml["before_start"]["interactions"] == full["totals"]["interactions"] - 1
+          and ml["before_start"]["feedback"] == full["totals"]["feedback"] and ml["g3"]["feedback"] == 0,
+          json.dumps(ml["before_start"]))
+    counts.GATES_FROM = counts.PARK_OPENED
+    check("Start day: default counts everything", counts.metrics() == full and full["before_start"]
+          == {"visits": 0, "interactions": 0, "feedback": 0})
+
     # ---------- the engine's own selftest ----------
     before_st = counts.metrics()
     st = app.selftest()

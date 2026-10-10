@@ -33,6 +33,12 @@ USE_DB = bool(DATABASE_URL and psycopg)
 
 PARK_TZ = os.environ.get("PARK_TZ", "Australia/Melbourne")
 PARK_OPENED = datetime.date(2026, 10, 1)   # no first-visit date can be earlier
+try:
+    # The day the gates start counting (the first invite day). Earlier rows are kept and
+    # reported under "before_start", and are in no gate number.
+    GATES_FROM = datetime.date.fromisoformat(os.environ.get("GATES_FROM", "")[:10])
+except ValueError:
+    GATES_FROM = PARK_OPENED
 RETURN_WINDOW_DAYS = 7                     # G1: a browser needs a week to come back
 MAX_FEEDBACK_CHARS = 500
 
@@ -269,12 +275,12 @@ def _load(as_of):
             visits = c.execute(
                 "SELECT day, first_day, kind, qa, n FROM visit_counts WHERE day <= %s", (as_of,)).fetchall()
             inter = c.execute(
-                "SELECT kind, tree, path, root_cause, device, qa, copied, opened_ai, shared, share_opens, "
+                "SELECT day, kind, tree, path, root_cause, device, qa, copied, opened_ai, shared, share_opens, "
                 "fb_rating, (fb_text IS NOT NULL) FROM interactions WHERE day <= %s", (as_of,)).fetchall()
         return visits, inter
     with _lock:
         visits = [(k[0], k[1], k[2], k[3], n) for k, n in _mem_visits.items() if k[0] <= as_of]
-        inter = [(r["kind"], r["tree"], r["path"], r["root_cause"], r["device"], r["qa"], r["copied"],
+        inter = [(r["day"], r["kind"], r["tree"], r["path"], r["root_cause"], r["device"], r["qa"], r["copied"],
                   r["opened_ai"], r["shared"], r["share_opens"], r["fb_rating"], r["fb_text"] is not None)
                  for r in _mem_interactions.values() if r["day"] <= as_of]
     return visits, inter
@@ -296,9 +302,13 @@ def metrics(as_of=None):
     cutoff = as_of - datetime.timedelta(days=RETURN_WINDOW_DAYS)
     v = {"first": 0, "returned": 0, "daily": 0}
     eligible = returned = qa_visits = 0
+    early = {"visits": 0, "interactions": 0, "feedback": 0}
     for day, first_day, kind, qa, n in visits:
         if qa:
             qa_visits += n
+            continue
+        if first_day < GATES_FROM:      # a browser first seen before counting started
+            early["visits"] += n
             continue
         v[kind] = v.get(kind, 0) + n
         if first_day <= cutoff:
@@ -313,10 +323,14 @@ def metrics(as_of=None):
 
     total, by_tree, by_kind, by_device, nodes = blank(), {}, {}, {}, {}
     qa_interactions = qa_feedback = 0
-    for kind, tree, path, root_cause, device, qa, copied, opened_ai, shared, share_opens, rating, has_text in inter:
+    for day, kind, tree, path, root_cause, device, qa, copied, opened_ai, shared, share_opens, rating, has_text in inter:
         if qa:
             qa_interactions += 1
             qa_feedback += 1 if rating else 0
+            continue
+        if day < GATES_FROM:
+            early["interactions"] += 1
+            early["feedback"] += 1 if rating else 0
             continue
         buckets = [total, by_tree.setdefault(tree, blank()), by_kind.setdefault(kind, blank()),
                    by_device.setdefault(device or "unknown", blank())]
@@ -344,9 +358,11 @@ def metrics(as_of=None):
     return {
         "ok": True,
         "as_of": as_of.isoformat(),
+        "counting_from": GATES_FROM.isoformat(),
         "timezone": PARK_TZ,
         "store": "postgres" if USE_DB else "memory",
-        "note": "Counts only. Test (qa) rows are listed under qa and are in no other number.",
+        "note": "Counts only. Test (qa) rows are listed under qa, and rows from before counting_from under "
+                "before_start. Neither is in any other number.",
         "g1": {"eligible_first_visits": eligible, "returned": returned, "rate_percent": _rate(returned, eligible),
                "rule": f"browsers whose first visit was {RETURN_WINDOW_DAYS} or more days before as_of"},
         "g2": {"prompts": total["prompts"], "used": total["used"], "rate_percent": _rate(total["used"], total["prompts"]),
@@ -360,4 +376,5 @@ def metrics(as_of=None):
         "by_device": by_device,
         "nodes": sorted(nodes.values(), key=lambda n: (-n["interactions"], n["tree"], n["path"])),
         "qa": {"visits": qa_visits, "interactions": qa_interactions, "feedback": qa_feedback},
+        "before_start": early,
     }
