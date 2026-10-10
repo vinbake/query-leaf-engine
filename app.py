@@ -11,8 +11,14 @@ Endpoints
   GET  /api/entry                      entry question per tree
   POST /api/session/start    {tree}
   POST /api/session/answer   {session_id, tree, node_id, answer_text}
-  POST /api/session/finalize {session_id, tree}
+  POST /api/session/finalize {session_id, tree, qa?, device?}
   GET  /api/prompt/<code>        (share codes persist in Postgres when DATABASE_URL is set)
+
+Gate counting (counts.py; anonymous, to the day, no visitor identifier):
+  POST /api/visit                  {kind: first|returned|daily, first_day, qa?}
+  POST /api/prompt/<code>/tap      {type: copy|open_ai|share|share_open}
+  POST /api/prompt/<code>/feedback {rating: yes|partly|no, text?}
+  GET  /api/metrics[?as_of=YYYY-MM-DD]   counts only, no text
 """
 import json
 import os
@@ -20,7 +26,9 @@ import re
 import secrets
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import parse_qs, urlsplit
 
+import counts
 from query_engine import QueryEngine, Answer, Tree
 from trees_config import load_trees_config
 from au_context import load_au_context
@@ -28,6 +36,9 @@ from au_context import load_au_context
 SESSION_TTL = 30 * 60
 SHARE_TTL = 90 * 24 * 3600
 MAX_SESSIONS = 5000
+# Where a shared prompt opens. Set PUBLIC_BASE_URL when the park's address changes.
+PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "https://thequeryleaf.com.au").rstrip("/")
+CODE_IN_PATH = re.compile(r"/api/prompt/[A-Za-z0-9]{6}")
 
 TREES = load_trees_config()
 AU = load_au_context()
@@ -192,16 +203,45 @@ def finalize(body):
     if p is None:
         return 409, {"ok": False, "error": "no pinhole reached for this tree yet"}
     if p.root_cause == "CRISIS_ROUTE":
+        # A crisis route never becomes a prompt and is never counted.
         return 200, {"ok": True, "status": "CRISIS_ROUTE", "crisis": CRISIS}
+    done = s.setdefault("final", {})
+    if tree_name in done:
+        # Asking twice (a page reload) returns the same prompt and code, counted once.
+        return 200, done[tree_name]
     out = eng.finalize_prompt(tree)
     payload = {"tree": tree_name, "pinhole": _pinhole_dict(out.pinhole),
                "prompt_text": out.prompt_text, "feedback_options": out.feedback_options}
     while share_exists(out.share_code):       # avoid collisions
         out.share_code = eng._generate_share_code()
     durable = share_put(out.share_code, payload)
-    return 200, {"ok": True, "share_code": out.share_code, "durable": durable,
-                 "share_url": f"https://thequeryleaf.com.au/prompt/{out.share_code}",
-                 "cache_ttl_days": 90, **payload}
+    path = " > ".join(a.node_id for a in eng.answer_history if a.tree == tree)
+    counts.record_interaction(out.share_code, tree_name, path, out.pinhole.root_cause,
+                              device=str(body.get("device", "")), qa=bool(body.get("qa")))
+    result = {"ok": True, "share_code": out.share_code, "durable": durable,
+              "share_url": f"{PUBLIC_BASE_URL}/prompt/{out.share_code}",
+              "cache_ttl_days": 90, **payload}
+    done[tree_name] = result
+    return 200, result
+
+
+def visit(body):
+    ok, reason = counts.record_visit(str(body.get("kind", "")), body.get("first_day"), bool(body.get("qa")))
+    return (200, {"ok": True}) if ok else (200, {"ok": False, "reason": reason})
+
+
+def tap(code, body):
+    ok, reason = counts.record_tap(code.upper(), str(body.get("type", "")))
+    if ok:
+        return 200, {"ok": True}
+    return (404 if reason == "unknown code" else 400), {"ok": False, "error": reason}
+
+
+def feedback(code, body):
+    ok, reason = counts.record_feedback(code.upper(), body.get("rating"), body.get("text"))
+    if ok:
+        return 200, {"ok": True}
+    return (404 if reason == "unknown code" else 400), {"ok": False, "error": reason}
 
 
 def selftest():
@@ -209,6 +249,7 @@ def selftest():
     Sessions created here are deleted afterwards; nothing visitor-related is stored."""
     results = []
     made = []
+    codes = []
 
     def run(tree, steps):
         _, r = start({"tree": tree})
@@ -232,7 +273,8 @@ def selftest():
               and ph.get("confidence", 0) >= 0.85, ph.get("root_cause", ""))
 
         # 4. share code + 5. AU context (on the Oak session above)
-        _, f = finalize({"session_id": sid, "tree": "oak"})
+        before = counts.metrics()
+        _, f = finalize({"session_id": sid, "tree": "oak", "qa": True, "device": "desktop"})
         code = f.get("share_code", "")
         got = share_get(code) or {}
         check("4 Share code", bool(re.fullmatch(r"[A-Z0-9]{6}", code)) and bool(got),
@@ -262,18 +304,57 @@ def selftest():
         # 6. Wattle TGA guardrail present in prompt
         sidw, r = run("wattle", [("wattle", "Q1", "Energy/tiredness"), ("wattle", "Q2.Energy", "Recently"),
                                  ("wattle", "Q2.Energy.Recent", "Stress increased")])
-        _, fw = finalize({"session_id": sidw, "tree": "wattle"})
+        _, fw = finalize({"session_id": sidw, "tree": "wattle", "qa": True})
+        codes.append(fw.get("share_code", ""))
         check("6 Wattle TGA guardrail", "people explore" in fw.get("prompt_text", ""),
               "guardrail wording present in Wattle prompt")
 
         # 7. Same-input stability: re-running OAK-1 gives the same pinhole
         _, r2 = run("oak", [("oak", "Q1", "Income too low"), ("oak", "Q2.Income", "Irregular/gig work")])
         check("7 Repeatable result", r2.get("pinhole", {}).get("root_cause") == ph.get("root_cause"), "")
+
+        # 8-12. Gate counting. Every check reads the stored record back, not the reply.
+        codes.append(code)
+        row = counts.get_interaction(code) or {}
+        check("8 Interaction recorded", row.get("tree") == "oak" and row.get("path") == "Q1 > Q2.Income"
+              and row.get("qa") is True and row.get("copied") is False and row.get("fb_rating") is None
+              and row.get("device") == "desktop",
+              f"path '{row.get('path')}', store={counts.metrics().get('store')}")
+
+        _, f2 = finalize({"session_id": sid, "tree": "oak", "qa": True})
+        check("9 Finalize twice, counted once", f2.get("share_code") == code, "same code returned on a repeat")
+
+        tap(code, {"type": "copy"})
+        tap(code, {"type": "share_open"})
+        feedback(code, {"rating": "partly", "text": "  selftest:   what was\nmissing  "})
+        feedback(code, {"rating": "partly"})          # a bare tap must keep the text
+        row = counts.get_interaction(code) or {}
+        check("10 Tap and feedback stored", row.get("copied") is True and row.get("opened_ai") is False
+              and row.get("share_opens") == 1 and row.get("fb_rating") == "partly"
+              and row.get("fb_text") == "selftest: what was missing",
+              f"copied={row.get('copied')}, rating={row.get('fb_rating')}, text kept={bool(row.get('fb_text'))}")
+        feedback(code, {"rating": "yes"})
+        row = counts.get_interaction(code) or {}
+        bad_tap, _ = tap("ZZZZZ0", {"type": "copy"})
+        check("11 Answer can change; unknown code refused", row.get("fb_rating") == "yes"
+              and row.get("fb_text") is None and bad_tap == 404, "")
+
+        visit({"kind": "first", "qa": True})
+        _, same_day = visit({"kind": "returned", "first_day": counts.today().isoformat(), "qa": True})
+        after = counts.metrics()
+        unchanged = all(before.get(k) == after.get(k) for k in ("g1", "g2", "g3", "visits", "totals"))
+        check("12 Test rows left out of the gates", unchanged
+              and after["qa"]["interactions"] >= before["qa"]["interactions"] + 2
+              and after["qa"]["visits"] == before["qa"]["visits"] + 1 and same_day.get("ok") is False,
+              f"gate numbers unchanged={unchanged}; a same-day 'returned' is refused")
     except Exception as e:
         check("selftest runner", False, type(e).__name__)
     finally:
         for sid in made:
             SESSIONS.pop(sid, None)
+        for c in codes:
+            if c:
+                counts.delete_interaction(c)
     passed = sum(1 for x in results if x["status"] == "PASS")
     return {"ok": passed == len(results), "passed": passed, "total": len(results), "results": results}
 
@@ -291,8 +372,8 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
-    def log_message(self, fmt, *args):   # never log bodies (visitor answers)
-        print("%s %s" % (self.command, self.path.split("?")[0]), flush=True)
+    def log_message(self, fmt, *args):   # never log bodies (visitor answers) or prompt codes
+        print("%s %s" % (self.command, CODE_IN_PATH.sub("/api/prompt/<code>", self.path.split("?")[0])), flush=True)
 
     def do_OPTIONS(self):
         self.send_response(204)
@@ -305,9 +386,12 @@ class Handler(BaseHTTPRequestHandler):
         path = self.path.split("?")[0].rstrip("/")
         if path in ("/health", "/api/health"):
             return self._send(200, {"status": "operational", "trees": len(TREES),
-                                    "version": "1.0-staging"})
+                                    "version": "1.1-counting"})
         if path == "/api/selftest":
             return self._send(200, selftest())
+        if path == "/api/metrics":
+            as_of = parse_qs(urlsplit(self.path).query).get("as_of", [None])[0]
+            return self._send(200, counts.metrics(as_of))
         if path == "/api/entry":
             return self._send(200, {"ok": True, "entry": {
                 t: {"statement": TREES[t].get("entry_statement", ""),
@@ -331,10 +415,16 @@ class Handler(BaseHTTPRequestHandler):
         except Exception:
             return self._send(400, {"ok": False, "error": "invalid JSON"})
         routes = {"/api/session/start": start, "/api/session/answer": answer,
-                  "/api/session/finalize": finalize}
+                  "/api/session/finalize": finalize, "/api/visit": visit}
         fn = routes.get(path)
+        m = re.fullmatch(r"/api/prompt/([A-Za-z0-9]{6})/(tap|feedback)", path)
+        if m:
+            which = tap if m.group(2) == "tap" else feedback
+            fn = lambda b, _code=m.group(1): which(_code, b)
         if not fn:
             return self._send(404, {"ok": False, "error": "not found"})
+        if not isinstance(body, dict):
+            return self._send(400, {"ok": False, "error": "invalid JSON"})
         try:
             code, obj = fn(body)
         except Exception as e:
@@ -346,6 +436,7 @@ class Handler(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "8080"))
     _db_init()
-    print(f"Share store: {'postgres' if USE_DB else 'memory'}", flush=True)
+    counts.init()
+    print(f"Share store: {'postgres' if USE_DB else 'memory'}; counting store: {'postgres' if counts.USE_DB else 'memory'}", flush=True)
     print(f"Engine initialized. Trees: {list(TREES)}. Listening on {port}", flush=True)
     ThreadingHTTPServer(("0.0.0.0", port), Handler).serve_forever()

@@ -1,2 +1,4 @@
-# Share-link store (Postgres). Everything else is standard library.
+# Share-link store and gate counting (Postgres). Everything else is standard library.
 psycopg[binary]>=3.2
+# Time zone data for the park's day (zoneinfo).
+tzdata
