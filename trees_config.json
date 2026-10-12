@@ -352,16 +352,20 @@
     "Q4": {
       "question": "Are you safe? Is anyone else at risk?",
       "type": "multiple_choice",
+      "safety_check": true,
+      "note": "You don't have to answer this. We only ask so we can point you to the right help. Your answer isn't saved and won't appear in your prompt.",
       "crisis_detection": true,
       "answers": [
         "Yes, safe",
         "Thoughts of harm but no plan",
-        "I'm not sure"
+        "I'm not sure",
+        "I'd rather not say"
       ],
       "routes": {
         "Yes, safe": "Q5",
         "Thoughts of harm but no plan": "CRISIS_ROUTE",
-        "I'm not sure": "CRISIS_ROUTE"
+        "I'm not sure": "CRISIS_ROUTE",
+        "I'd rather not say": "Q5"
       }
     },
     "Q5": {

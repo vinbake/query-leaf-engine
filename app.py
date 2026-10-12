@@ -137,8 +137,14 @@ def _node_view(tree, node_id):
     node = TREES.get(tree, {}).get(node_id)
     if not node:
         return None
-    return {"tree": tree, "node_id": node_id,
+    view = {"tree": tree, "node_id": node_id,
             "question": node.get("question", ""), "answers": node.get("answers", [])}
+    if node.get("note"):
+        view["note"] = node["note"]
+    if node.get("safety_check"):
+        # The helplines sit on the safety question itself (Phil, 2026-10-13).
+        view["help"] = {"lifeline": CRISIS["lifeline"], "beyond_blue": CRISIS["beyond_blue"]}
+    return view
 
 
 def _pinhole_dict(p):

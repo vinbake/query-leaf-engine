@@ -363,6 +363,9 @@ class QueryEngine:
         """
         situation_parts = []
         for answer in self.answer_history:
+            node = self.trees.get(answer.tree.value, {}).get(answer.node_id, {})
+            if node.get("safety_check"):
+                continue  # the safety answer is never written into a prompt (2026-10-13)
             if answer.tree == tree and not answer.node_id.startswith("BRIDGE/"):
                 situation_parts.append(f"{answer.node_id}: {answer.user_response}")
         return " | ".join(situation_parts)
