@@ -183,10 +183,29 @@ def answer(body):
         return 200, {"ok": True, "status": "RECONCILE",
                      "trees": [t.value for t in trees], "root_cause": cause,
                      "pinholes": [_pinhole_dict(p) for p in eng.pinholes.values() if p]}
-    nxt = _node_view(tree_name, result) if result else None
+    nxt = None
+    if result and result.startswith("BRIDGE/"):
+        nxt = _bridge_view(tree_name, result)        # the Wise Man's defining question
+    elif result and "/" in result:
+        other, node = result.split("/", 1)           # carry on in another tree
+        nxt = _node_view(other, node)
+    elif result:
+        nxt = _node_view(tree_name, result)
     if nxt:
         return 200, {"ok": True, "status": "NEXT", "next": nxt}
     return 200, {"ok": True, "status": "NONE"}
+
+
+def _bridge_view(tree_name, node_id):
+    """'BRIDGE/gum|acacia' -> 'Is this more about the relationship, or how you're feeling?'"""
+    options = [t for t in node_id.split("/", 1)[1].split("|") if t in TREES]
+    if not options:
+        return None
+    phrases = [TREES[t].get("bridge_phrase", t) for t in options]
+    question = "Is this more about " + ", or ".join(phrases) + "?" if len(phrases) == 2 else \
+        "Which is this more about: " + ", ".join(phrases) + "?"
+    return {"tree": tree_name, "node_id": node_id, "question": question,
+            "answers": [TREES[t].get("bridge_answer", t) for t in options]}
 
 
 def finalize(body):
@@ -199,23 +218,30 @@ def finalize(body):
     s["touched"] = time.time()
     eng = s["engine"]
     tree = Tree(tree_name)
-    p = eng.pinholes.get(tree)
-    if p is None:
-        return 409, {"ok": False, "error": "no pinhole reached for this tree yet"}
-    if p.root_cause == "CRISIS_ROUTE":
+    found = {t: p for t, p in eng.pinholes.items() if p is not None}
+    if any(p.root_cause == "CRISIS_ROUTE" for p in found.values()):
         # A crisis route never becomes a prompt and is never counted.
         return 200, {"ok": True, "status": "CRISIS_ROUTE", "crisis": CRISIS}
+    if tree not in found and not found:
+        return 409, {"ok": False, "error": "no pinhole reached for this tree yet"}
     done = s.setdefault("final", {})
     if tree_name in done:
         # Asking twice (a page reload) returns the same prompt and code, counted once.
         return 200, done[tree_name]
-    out = eng.finalize_prompt(tree)
+    joined = len(found) > 1
+    if joined:
+        out = eng.finalize_joined()                # answers ran across trees (2026-10-12)
+    else:
+        out = eng.finalize_prompt(tree if tree in found else next(iter(found)))
     payload = {"tree": tree_name, "pinhole": _pinhole_dict(out.pinhole),
                "prompt_text": out.prompt_text, "feedback_options": out.feedback_options}
+    if joined:
+        payload["trees"] = [t.value for t in found]
     while share_exists(out.share_code):       # avoid collisions
         out.share_code = eng._generate_share_code()
     durable = share_put(out.share_code, payload)
-    path = " > ".join(a.node_id for a in eng.answer_history if a.tree == tree)
+    path = " > ".join((a.node_id if a.tree == tree else f"{a.tree.value}:{a.node_id}")
+                      for a in eng.answer_history)
     counts.record_interaction(out.share_code, tree_name, path, out.pinhole.root_cause,
                               device=str(body.get("device", "")), qa=bool(body.get("qa")))
     result = {"ok": True, "share_code": out.share_code, "durable": durable,
@@ -347,6 +373,22 @@ def selftest():
               and after["qa"]["interactions"] >= before["qa"]["interactions"] + 2
               and after["qa"]["visits"] == before["qa"]["visits"] + 1 and same_day.get("ok") is False,
               f"gate numbers unchanged={unchanged}; a same-day 'returned' is refused")
+        # 13. Cross-tree hand-over (added 2026-10-12): Oak's "No" asks the defining
+        # question, carries on in Gum and ends in one joined prompt.
+        sid3, r = run("oak", [("oak", "Q1", "Income too low"),
+                              ("oak", "Q2.Income", "Actually below living costs"),
+                              ("oak", "Q3", "No")])
+        bridge = r.get("next", {}) if r.get("status") == "NEXT" else {}
+        _, r = answer({"session_id": sid3, "tree": "oak", "node_id": bridge.get("node_id", ""),
+                       "answer_text": "The relationship"})
+        went_gum = r.get("status") == "NEXT" and r.get("next", {}).get("tree") == "gum"
+        _, r = answer({"session_id": sid3, "tree": "gum", "node_id": "Q1", "answer_text": "I don't feel heard"})
+        _, fj = finalize({"session_id": sid3, "tree": "oak", "qa": True})
+        codes.append(fj.get("share_code", ""))
+        check("13 Cross-tree hand-over", bridge.get("answers") == ["The relationship", "How I'm feeling"]
+              and went_gum and r.get("status") == "RECONCILE" and fj.get("ok") is True
+              and fj.get("trees") == ["oak", "gum"] and "What I've said:" in fj.get("prompt_text", ""),
+              "defining question asked, carried on in Gum, one joined prompt")
     except Exception as e:
         check("selftest runner", False, type(e).__name__)
     finally:

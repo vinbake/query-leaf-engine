@@ -91,6 +91,16 @@ class QueryEngine:
         self.answer_history.append(answer)
 
         tree = answer.tree
+
+        # The Wise Man's defining question at a hand-over (added 2026-10-12):
+        # "BRIDGE/gum|acacia" asks which tree to carry on in. Returns "<tree>/Q1".
+        if answer.node_id.startswith("BRIDGE/"):
+            options = [t for t in answer.node_id.split("/", 1)[1].split("|") if t in self.trees]
+            for t in options:
+                if self.trees[t].get("bridge_answer") == answer.user_response:
+                    return f"{t}/Q1"
+            return f"{options[0]}/Q1" if options else None
+
         current_node = self.trees.get(tree.value, {}).get(answer.node_id)
 
         if not current_node:
@@ -120,10 +130,51 @@ class QueryEngine:
             reconciliation = self.detect_reconciliation()
             if reconciliation:
                 return "RECONCILE"
-            # If no reconciliation signal, treat as pinhole not found yet
-            return None
+            return self._hand_over(tree, answer.node_id, next_node)
+
+        # 5. A route that says "stop here" but whose node carries no pinhole text
+        # used to crash finalize (Gum Q1 "I don't feel heard", fixed 2026-10-12).
+        if next_node == "PINHOLE" and not self.pinholes.get(tree):
+            self.pinholes[tree] = Pinhole(
+                tree=tree,
+                root_cause=current_node.get("default_pinhole") or f"The heart of it: {answer.user_response.lower()}.",
+                confidence=0.7,
+                signals=[answer.node_id],
+            )
+            if self._has_cross_tree_signals():
+                return "RECONCILE"
+            return "PINHOLE"
 
         return next_node if next_node else None
+
+    def _hand_over(self, tree: Tree, node_id: str, route: str) -> Optional[str]:
+        """
+        A route such as RECONCILE_OAK or RECONCILE_GUM_OR_ACACIA means the real
+        pressure point sits in another tree. Added 2026-10-12: before this the
+        engine returned nothing and the visitor was left waiting.
+
+        The starting tree's part is kept as a hand-over pinhole, so the final
+        prompt can join both trees. Trees already visited are not offered again,
+        so a visitor can never be sent round in a circle.
+
+        Returns "<tree>/Q1" (carry on in that tree), "BRIDGE/<a>|<b>" (ask the
+        defining question first), or RECONCILE / PINHOLE when nowhere is left.
+        """
+        if not self.pinholes.get(tree):
+            self.pinholes[tree] = Pinhole(
+                tree=tree,
+                root_cause=self.trees.get(tree.value, {}).get("handoff_note", "This is part of it, but not all of it."),
+                confidence=0.6,
+                signals=[node_id],
+            )
+        visited = {a.tree.value for a in self.answer_history}
+        targets = [t.lower() for t in route[len("RECONCILE_"):].split("_OR_")]
+        targets = [t for t in targets if t in self.trees and t not in visited]
+        if not targets:
+            return "RECONCILE" if self._has_cross_tree_signals() else "PINHOLE"
+        if len(targets) == 1:
+            return f"{targets[0]}/Q1"
+        return "BRIDGE/" + "|".join(targets)
 
     def finalize_prompt(self, tree: Tree) -> PromptOutput:
         """
@@ -271,6 +322,23 @@ class QueryEngine:
                 "Financial stress manifests as fatigue. Fix anxiety, tiredness improves."
             )
 
+        # Patterns 5 to 7 and the fallback added 2026-10-12 with the hand-over.
+        if Tree.OAK in identified and Tree.GUM in identified:
+            return (
+                [Tree.OAK, Tree.GUM],
+                "Money stress is driving the tension between you. The real step is facing the numbers together."
+            )
+        if Tree.OAK in identified and Tree.ACACIA in identified:
+            return (
+                [Tree.OAK, Tree.ACACIA],
+                "Money worry is wearing you down. Easing the worry matters as much as fixing the numbers."
+            )
+        if Tree.PINE in identified and Tree.ACACIA in identified:
+            return (
+                [Tree.PINE, Tree.ACACIA],
+                "Putting it off says more about how you're feeling than about discipline. Start with the feeling."
+            )
+
         # Pattern 4: Pine + Gum: "Procrastinating" + "Don't feel heard"
         if Tree.PINE in identified and Tree.GUM in identified:
             pine_signal = "procrastin" in identified[Tree.PINE].root_cause.lower()
@@ -281,6 +349,12 @@ class QueryEngine:
                     "Resentment that they don't support this goal. Fix partnership first."
                 )
 
+        if len(identified) > 1:
+            return (
+                list(identified.keys()),
+                "More than one part of life is tangled up in this. Look at them together, not one at a time."
+            )
+
         return None
 
     def _build_situation(self, tree: Tree) -> str:
@@ -289,9 +363,49 @@ class QueryEngine:
         """
         situation_parts = []
         for answer in self.answer_history:
-            if answer.tree == tree:
+            if answer.tree == tree and not answer.node_id.startswith("BRIDGE/"):
                 situation_parts.append(f"{answer.node_id}: {answer.user_response}")
         return " | ".join(situation_parts)
+
+    def finalize_joined(self) -> PromptOutput:
+        """
+        One prompt for a visitor whose answers ran across more than one tree
+        (added 2026-10-12). Leads with the reconciled root cause, then what was
+        said in each tree, then each tree's Australian context.
+        """
+        identified = {t: p for t, p in self.pinholes.items() if p is not None}
+        rec = self.detect_reconciliation()
+        trees, cause = rec if rec else (list(identified.keys()), "")
+        order = [a.tree for a in self.answer_history if a.tree in identified]
+        trees = list(dict.fromkeys(order + [t for t in trees if t in identified]))
+        lead = cause or " ".join(identified[t].root_cause for t in trees)
+        said = []
+        for t in trees:
+            label = self.trees.get(t.value, {}).get("name", t.value).split(" — ")[0]
+            said.append(f"{label}: {identified[t].root_cause} ({self._build_situation(t)})")
+        contexts = [self._format_au_context(self.au_context.get(t.value, {})) for t in trees]
+        prompt = f"""
+{lead}
+
+What I've said:
+""".strip() + "\n" + "\n".join(said) + f"""
+
+Specific ask:
+Help me understand how these connect, what is really driving it, and what one step I could take this week.
+
+Australian context:
+""" + "\n".join(contexts) + """
+
+Important: Keep this practical and specific to my situation."""
+        pinhole = Pinhole(tree=trees[0], root_cause=lead, confidence=0.8,
+                          signals=[t.value for t in trees])
+        return PromptOutput(
+            pinhole=pinhole,
+            prompt_text=prompt,
+            au_context="\n".join(contexts),
+            share_code=self._generate_share_code(),
+            feedback_options=["brilliant_answer", "something_missing", "didnt_work"],
+        )
 
     def _format_au_context(self, au_context: Dict) -> str:
         """

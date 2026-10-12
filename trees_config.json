@@ -3,6 +3,9 @@
     "name": "Oak (Finance) — Magpie Tree",
     "entry_statement": "Money is tight, or I'm worried about something financial.",
     "bird": "Magpie",
+    "bridge_phrase": "money",
+    "bridge_answer": "Money",
+    "handoff_note": "The money pressure is real, but fixing the numbers alone won't settle this.",
     "Q1": {
       "question": "What's the money problem?",
       "type": "multiple_choice",
@@ -118,6 +121,9 @@
     "name": "Gum (Relationship) — Parrot Tree",
     "entry_statement": "Something's off with my partner / family / a close relationship.",
     "bird": "Parrot",
+    "bridge_phrase": "the relationship",
+    "bridge_answer": "The relationship",
+    "handoff_note": "The strain between you is real, but it isn't the whole story.",
     "Q1": {
       "question": "What's the relationship problem?",
       "type": "multiple_choice",
@@ -134,6 +140,9 @@
         "I don't feel heard": "PINHOLE",
         "Trust broke": "Q2.Trust",
         "I don't know how to talk about it": "Q4"
+      },
+      "pinholes": {
+        "I don't feel heard": "Not feeling heard is the heart of it. What needs to change is how you're listened to, not what you're arguing about."
       }
     },
     "Q2.Fighting": {
@@ -260,6 +269,9 @@
     "name": "Acacia (Wellbeing) — Owl Tree",
     "entry_statement": "I'm stressed, burnt out, not sleeping, or something feels off.",
     "bird": "Owl",
+    "bridge_phrase": "how you're feeling",
+    "bridge_answer": "How I'm feeling",
+    "handoff_note": "How you're feeling is part of this, but something else is feeding it.",
     "Q1": {
       "question": "What's going on?",
       "type": "multiple_choice",
@@ -273,7 +285,7 @@
       "routes": {
         "I can't sleep": "Q2.Sleep",
         "I'm exhausted but wired": "Q2.Wired",
-        "Everything feels too much": "Q3",
+        "Everything feels too much": "Q4",
         "I can't focus": "Q3",
         "Anxious all the time": "Q3"
       }
@@ -372,6 +384,9 @@
     "name": "Pine (Productivity) — Eagle Tree",
     "entry_statement": "I can't get things done, I'm procrastinating, or I'm stuck on something.",
     "bird": "Eagle",
+    "bridge_phrase": "getting things done",
+    "bridge_answer": "Getting things done",
+    "handoff_note": "Getting things done is part of this, but something else is driving it.",
     "Q1": {
       "question": "What's the productivity problem?",
       "type": "multiple_choice",
@@ -473,6 +488,9 @@
     "name": "Wattle (Health) — Honeyeater Tree",
     "entry_statement": "Something about my health or body is worrying me, or I feel off.",
     "bird": "Honeyeater",
+    "bridge_phrase": "your health",
+    "bridge_answer": "My health",
+    "handoff_note": "Your health is part of this, but something else is feeding it.",
     "Q1": {
       "question": "What's the health concern?",
       "type": "multiple_choice",
