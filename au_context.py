@@ -4,7 +4,7 @@ AU Context Layer — Tree-specific Australian facts, services, and guidance
 This is the swappable data layer for prompts. All AU figures, service names,
 phone numbers, and regulatory references live here.
 
-Updated: 2026-09-30 (FY 2025-26)
+Updated: 2026-10-14 (Oak services corrected; Oak tax and super figures removed until verified at the ATO)
 """
 
 
@@ -23,30 +23,29 @@ def load_au_context() -> dict:
                     "description": "Free budget tools and financial guidance"
                 },
                 {
-                    "name": "ASIC MoneyHelper",
-                    "url": "www.moneyhelper.org.au",
-                    "description": "Retirement and superannuation planning"
+                    "name": "National Debt Helpline",
+                    "url": "www.ndh.org.au",
+                    "description": "Free, confidential financial counselling"
                 },
                 {
-                    "name": "Centrelink",
-                    "phone": "13 23 17",
+                    "name": "Services Australia (Centrelink)",
+                    "url": "www.servicesaustralia.gov.au",
                     "description": "Income support payments (if eligible)"
                 },
                 {
                     "name": "Fair Work Ombudsman",
                     "url": "www.fairwork.gov.au",
-                    "description": "Employment entitlements and disputes"
+                    "description": "If the problem is pay or entitlements at work"
                 },
                 {
                     "name": "Community Legal Centres",
-                    "description": "Free financial and legal advice (varies by state)"
+                    "description": "Free legal advice; what is offered varies by centre"
                 }
             ],
-            "financial_year_info": {
-                "tax_free_threshold": "$18,200",
-                "year": "2025-26",
-                "super_contribution_cap": "$27,500"
-            },
+            # financial_year_info (tax-free threshold, super cap) removed from Oak's prompt
+            # 2026-10-14: the year was a year behind (now FY 2026-27), the super cap was
+            # out of date, and neither helps a budget question. Put figures back only
+            # when read from the ATO for the current year, and only where they matter.
             "state_hardship": {
                 "nsw": "NSW Community Services hardship assistance",
                 "vic": "Victoria emergency relief grants",

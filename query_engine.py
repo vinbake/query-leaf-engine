@@ -198,7 +198,7 @@ class QueryEngine:
             raise ValueError(f"No pinhole identified for {tree.value}")
 
         # Build the prompt
-        situation = self._build_situation(tree)
+        situation = self._build_situation(tree, as_list=True)
         au_context = self.au_context.get(tree.value, {})
         prompt_text = self._assemble_prompt(
             pinhole=pinhole,
@@ -370,9 +370,11 @@ class QueryEngine:
 
         return None
 
-    def _build_situation(self, tree: Tree) -> str:
+    def _build_situation(self, tree: Tree, as_list: bool = False) -> str:
         """
-        Reconstruct the visitor's situation from answer history.
+        Reconstruct the visitor's situation from answer history, written as the
+        question that was asked and the answer given (2026-10-14: it used to print
+        node codes such as "Q3: Partly", which meant nothing to the visitor's AI).
         """
         situation_parts = []
         for answer in self.answer_history:
@@ -380,7 +382,10 @@ class QueryEngine:
             if node.get("safety_check"):
                 continue  # the safety answer is never written into a prompt (2026-10-13)
             if answer.tree == tree and not answer.node_id.startswith("BRIDGE/"):
-                situation_parts.append(f"{answer.node_id}: {answer.user_response}")
+                question = node.get("question") or answer.node_id
+                situation_parts.append(f"{question} — {answer.user_response}")
+        if as_list:
+            return "\n".join(f"- {part}" for part in situation_parts)
         return " | ".join(situation_parts)
 
     def finalize_joined(self) -> PromptOutput:

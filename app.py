@@ -319,9 +319,16 @@ def selftest():
               f"code format ok, retrievable, ttl {f.get('cache_ttl_days')} days, "
               f"store={'postgres' if USE_DB and f.get('durable') else 'MEMORY (not durable)'}")
         text = f.get("prompt_text", "")
-        need = ["Centrelink", "13 23 17", "18,200", "Fair Work"]
+        need = ["MoneySmart", "National Debt Helpline", "Centrelink", "Fair Work"]
         miss = [k for k in need if k not in text]
-        check("5 AU context (Oak)", not miss, "missing: " + ", ".join(miss) if miss else "all present")
+        # Oak must not carry the retired items (2026-10-14): the doubtful "MoneyHelper",
+        # the unconfirmed Centrelink number, and tax/super figures that were a year behind.
+        stale = [k for k in ["MoneyHelper", "13 23 17", "27,500", "tax-free threshold"] if k in text]
+        # The Situation reads as questions and answers, never node codes like "Q3: Partly".
+        coded = re.search(r"(^|\n)- ?Q\d", text) is not None or "Q2.Income:" in text or "Q3:" in text
+        check("5 AU context (Oak)", not miss and not stale and not coded and "What's the money problem?" in text,
+              ("missing: " + ", ".join(miss) if miss else "") + (" stale: " + ", ".join(stale) if stale else "")
+              + (" node codes in Situation" if coded else "") or "services present, stale items gone, Situation in words")
 
         # 2. RECONCILE-1 cross-tree
         sid2, r = run("gum", [("gum", "Q1", "We're fighting"), ("gum", "Q2.Fighting", "Parenting"),
