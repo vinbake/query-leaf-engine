@@ -25,7 +25,7 @@ def load_au_context() -> dict:
                 {
                     "name": "National Debt Helpline",
                     "url": "www.ndh.org.au",
-                    "description": "Free, confidential financial counselling"
+                    "description": "Free, confidential financial counselling on 1800 007 007"
                 },
                 {
                     "name": "Services Australia (Centrelink)",

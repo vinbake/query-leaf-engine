@@ -319,7 +319,7 @@ def selftest():
               f"code format ok, retrievable, ttl {f.get('cache_ttl_days')} days, "
               f"store={'postgres' if USE_DB and f.get('durable') else 'MEMORY (not durable)'}")
         text = f.get("prompt_text", "")
-        need = ["MoneySmart", "National Debt Helpline", "Centrelink", "Fair Work"]
+        need = ["MoneySmart", "National Debt Helpline", "1800 007 007", "Centrelink", "Fair Work"]
         miss = [k for k in need if k not in text]
         # Oak must not carry the retired items (2026-10-14): the doubtful "MoneyHelper",
         # the unconfirmed Centrelink number, and tax/super figures that were a year behind.
