@@ -96,6 +96,19 @@ class QueryEngine:
         # "BRIDGE/gum|acacia" asks which tree to carry on in. Returns "<tree>/Q1".
         if answer.node_id.startswith("BRIDGE/"):
             options = [t for t in answer.node_id.split("/", 1)[1].split("|") if t in self.trees]
+            # A tree can set its own defining question (Oak, 2026-10-14): the choices
+            # include "stay" (carry on in the starting tree), so a visitor who says it
+            # is mostly the money is never pushed into another tree. An answer that
+            # matches nothing asks again; it is never guessed.
+            custom = self.trees.get(tree.value, {}).get("bridge")
+            if custom:
+                for c in custom.get("choices", []):
+                    if c.get("answer") == answer.user_response:
+                        if c.get("go") == "stay":
+                            return c.get("route")
+                        if c.get("go") in options:
+                            return f"{c['go']}/Q1"
+                return None
             for t in options:
                 if self.trees[t].get("bridge_answer") == answer.user_response:
                     return f"{t}/Q1"

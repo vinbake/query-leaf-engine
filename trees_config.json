@@ -6,6 +6,14 @@
     "bridge_phrase": "money",
     "bridge_answer": "Money",
     "handoff_note": "The money pressure is real, but fixing the numbers alone won't settle this.",
+    "bridge": {
+      "question": "If the money were sorted tomorrow, what would still be on your mind?",
+      "choices": [
+        {"answer": "Worry or stress in myself", "go": "acacia"},
+        {"answer": "Tension with someone close to me", "go": "gum"},
+        {"answer": "Mostly just the money", "go": "stay", "route": "Q4"}
+      ]
+    },
     "Q1": {
       "question": "What's the money problem?",
       "type": "multiple_choice",
@@ -81,7 +89,7 @@
       }
     },
     "Q3": {
-      "question": "If we fixed the number — best case, income up or spending down — would that solve the fight?",
+      "question": "If the money number were fixed tomorrow — income up or spending down — would things feel sorted?",
       "type": "multiple_choice",
       "answers": [
         "Yes",
@@ -104,7 +112,7 @@
         "Knowing I'm not alone",
         "A plan",
         "Immediate cash",
-        "A conversation with my partner",
+        "Talking the numbers through with someone",
         "Something else"
       ],
       "stops_narrowing": true,
@@ -112,7 +120,7 @@
         "Knowing I'm not alone": "You're carrying this alone. The first step is naming it out loud.",
         "A plan": "You need clarity, not more money. Structure comes first.",
         "Immediate cash": "Short-term relief is needed, but that's not a plan. Both matter.",
-        "A conversation with my partner": "This is the real blocker. You haven't looked at the numbers together.",
+        "Talking the numbers through with someone": "Talking the numbers through with someone is the missing step. Start by laying them out plainly.",
         "Something else": "That's your signal. Build toward it this week."
       }
     }

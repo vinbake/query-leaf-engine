@@ -207,6 +207,12 @@ def _bridge_view(tree_name, node_id):
     options = [t for t in node_id.split("/", 1)[1].split("|") if t in TREES]
     if not options:
         return None
+    custom = TREES.get(tree_name, {}).get("bridge")
+    if custom:
+        # The starting tree words its own question and may offer "stay" (see query_engine).
+        choices = [c for c in custom.get("choices", []) if c.get("go") == "stay" or c.get("go") in options]
+        return {"tree": tree_name, "node_id": node_id, "question": custom["question"],
+                "answers": [c["answer"] for c in choices]}
     phrases = [TREES[t].get("bridge_phrase", t) for t in options]
     question = "Is this more about " + ", or ".join(phrases) + "?" if len(phrases) == 2 else \
         "Which is this more about: " + ", ".join(phrases) + "?"
@@ -386,15 +392,36 @@ def selftest():
                               ("oak", "Q3", "No")])
         bridge = r.get("next", {}) if r.get("status") == "NEXT" else {}
         _, r = answer({"session_id": sid3, "tree": "oak", "node_id": bridge.get("node_id", ""),
-                       "answer_text": "The relationship"})
+                       "answer_text": "Tension with someone close to me"})
         went_gum = r.get("status") == "NEXT" and r.get("next", {}).get("tree") == "gum"
         _, r = answer({"session_id": sid3, "tree": "gum", "node_id": "Q1", "answer_text": "I don't feel heard"})
         _, fj = finalize({"session_id": sid3, "tree": "oak", "qa": True})
         codes.append(fj.get("share_code", ""))
-        check("13 Cross-tree hand-over", bridge.get("answers") == ["The relationship", "How I'm feeling"]
+        check("13 Cross-tree hand-over", bridge.get("answers") == ["Worry or stress in myself", "Tension with someone close to me", "Mostly just the money"]
               and went_gum and r.get("status") == "RECONCILE" and fj.get("ok") is True
               and fj.get("trees") == ["oak", "gum"] and "What I've said:" in fj.get("prompt_text", ""),
               "defining question asked, carried on in Gum, one joined prompt")
+        # 14. Oak wording and the "stay in Oak" route (added 2026-10-14, from Phil's first
+        # test: Oak assumed a fight and pushed him to another tree on no lead-in).
+        q3 = _node_view("oak", "Q3") or {}
+        q4 = _node_view("oak", "Q4") or {}
+        no_assumption = ("fight" not in q3.get("question", "").lower()
+                         and not any("partner" in a.lower() for a in q4.get("answers", [])))
+        sid4, r = run("oak", [("oak", "Q1", "Don't know where it goes"),
+                              ("oak", "Q2.Spending", "A few months"),
+                              ("oak", "Q3", "Partly")])
+        b4 = r.get("next", {}) if r.get("status") == "NEXT" else {}
+        _, r = answer({"session_id": sid4, "tree": "oak", "node_id": b4.get("node_id", ""),
+                       "answer_text": "Mostly just the money"})
+        stayed = r.get("status") == "NEXT" and r.get("next", {}).get("tree") == "oak" \
+            and r.get("next", {}).get("node_id") == "Q4"
+        _, r = answer({"session_id": sid4, "tree": "oak", "node_id": "Q4",
+                       "answer_text": "Talking the numbers through with someone"})
+        _, fj4 = finalize({"session_id": sid4, "tree": "oak", "qa": True})
+        codes.append(fj4.get("share_code", ""))
+        check("14 Oak wording; can stay in Oak", no_assumption and stayed
+              and r.get("status") == "PINHOLE" and fj4.get("ok") is True and fj4.get("trees", ["oak"]) == ["oak"],
+              "no fight/partner assumed; 'Mostly just the money' stays in Oak and ends in an Oak-only prompt")
     except Exception as e:
         check("selftest runner", False, type(e).__name__)
     finally:
