@@ -165,6 +165,23 @@ def start(body):
 
 
 def answer(body):
+    """
+    A resend of the same answer to the same question (the park retries when a
+    phone loses the reply, 2026-10-17) returns the first reply instead of being
+    counted twice, so a retry can never double an answer in the prompt.
+    """
+    s = SESSIONS.get(body.get("session_id"))
+    key = (str(body.get("tree", "")).lower(), str(body.get("node_id", "Q1")), str(body.get("answer_text", "")))
+    if s and s.get("last_key") == key:
+        s["touched"] = time.time()
+        return s["last_reply"]
+    reply = _answer_once(body)
+    if s and reply[0] == 200:
+        s["last_key"], s["last_reply"] = key, reply
+    return reply
+
+
+def _answer_once(body):
     s = SESSIONS.get(body.get("session_id"))
     if not s:
         return 404, {"ok": False, "error": "session expired or unknown"}
@@ -432,6 +449,13 @@ def selftest():
         check("14 Oak wording; can stay in Oak", no_assumption and stayed
               and r.get("status") == "PINHOLE" and fj4.get("ok") is True and fj4.get("trees", ["oak"]) == ["oak"],
               "no fight/partner assumed; 'Mostly just the money' stays in Oak and ends in an Oak-only prompt")
+
+        # 15: the park resends an answer when a phone loses the reply (2026-10-17).
+        sid5, r1 = run("oak", [("oak", "Q1", "Debt")])
+        _, r2 = answer({"session_id": sid5, "tree": "oak", "node_id": "Q1", "answer_text": "Debt"})
+        hist = [a.node_id for a in SESSIONS[sid5]["engine"].answer_history]
+        check("15 Resent answer counted once", r1 == r2 and hist == ["Q1"],
+              f"same reply on a resend; answers held: {len(hist)}")
     except Exception as e:
         check("selftest runner", False, type(e).__name__)
     finally:
