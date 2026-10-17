@@ -200,11 +200,18 @@ class QueryEngine:
         # Build the prompt
         situation = self._build_situation(tree, as_list=True)
         au_context = self.au_context.get(tree.value, {})
-        prompt_text = self._assemble_prompt(
-            pinhole=pinhole,
-            situation=situation,
-            au_context=au_context
-        )
+        spec = self._prompt_spec(tree, pinhole)
+        if spec:
+            # The Wise Man's handoff (2026-10-17): the pinhole travels as the
+            # visitor's own working view, the visitor's AI is asked to check it
+            # first, and the ask and services are chosen for that pinhole.
+            prompt_text = self._assemble_from_spec(tree, spec, situation, au_context)
+        else:
+            prompt_text = self._assemble_prompt(
+                pinhole=pinhole,
+                situation=situation,
+                au_context=au_context
+            )
 
         # Generate share code
         share_code = self._generate_share_code()
@@ -403,7 +410,7 @@ class QueryEngine:
         said = []
         for t in trees:
             label = self.trees.get(t.value, {}).get("name", t.value).split(" — ")[0]
-            said.append(f"{label}: {identified[t].root_cause} ({self._build_situation(t)})")
+            said.append(f"{label}: {self._first_person(t, identified[t])} ({self._build_situation(t)})")
         contexts = [self._format_au_context(self.au_context.get(t.value, {})) for t in trees]
         prompt = f"""
 {lead}
@@ -488,6 +495,59 @@ Important: Keep this practical and specific to my situation."""
             lines.append(note)
 
         return " ".join(lines) if lines else "No specific Australian services identified for this topic."
+
+    def _prompt_spec(self, tree: Tree, pinhole: Pinhole) -> Optional[Dict]:
+        """
+        The handoff wording for this pinhole, if the tree supplies one: the node
+        that produced the pinhole carries a "prompt" map keyed by the answer
+        given there ({formulation, ask, services}). None means the tree has not
+        been written this way yet, and the older template is used.
+        """
+        cfg = self.trees.get(tree.value, {})
+        node_id = (pinhole.signals or [None])[-1]
+        node = cfg.get(node_id, {}) if node_id else {}
+        prompts = node.get("prompt") or {}
+        answer = next((a.user_response for a in reversed(self.answer_history)
+                       if a.tree == tree and a.node_id == node_id), None)
+        return prompts.get(answer) if answer is not None else None
+
+    def _first_person(self, tree: Tree, pinhole: Pinhole) -> str:
+        """The pinhole in the visitor's own voice, where the tree supplies it."""
+        cfg = self.trees.get(tree.value, {})
+        spec = self._prompt_spec(tree, pinhole)
+        if spec:
+            return spec["formulation"]
+        if pinhole.root_cause == cfg.get("handoff_note") and cfg.get("handoff_formulation"):
+            return cfg["handoff_formulation"]
+        return pinhole.root_cause
+
+    def _assemble_from_spec(self, tree: Tree, spec: Dict, situation: str, au_context: Dict) -> str:
+        cfg = self.trees.get(tree.value, {})
+        q1 = next((a.user_response for a in self.answer_history
+                   if a.tree == tree and a.node_id == "Q1"), None)
+        opening = (cfg.get("Q1", {}).get("openings", {}) or {}).get(q1) \
+            or cfg.get("default_opening", "I'm trying to work out what's really going on")
+        not_this = cfg.get("not_generic", "general tips")
+        ask = list(spec.get("ask", []))[:2] + ["pick one step I can take this week"]
+        letters = "abc"
+        ask_lines = "\n".join(f"({letters[i]}) {a}" for i, a in enumerate(ask))
+        catalogue = au_context.get("catalogue", {})
+        services = [catalogue[s] for s in spec.get("services", []) if s in catalogue]
+        options = "\n".join(f"- {s}" for s in services)
+        parts = [
+            f"I'm in Australia and {opening}. Here's what I think is really going on: {spec['formulation']}",
+            f"What I told the Query Leaf:\n{situation}",
+            # The Wise Man has already asked the questions (Phil, 2026-10-17): the AI answers
+            # straight away, and says what it assumed rather than starting a round of questions.
+            f"Please answer straight away from what I've told you. Work on that root cause first, not {not_this}. "
+            "If my reading doesn't fit what I've said, or you need something I haven't told you, "
+            "say so in a line and tell me what you've assumed.",
+            f"Please help me:\n{ask_lines}",
+            "If you're unsure of a figure or rule, say so rather than guessing. Keep it plain and practical.",
+        ]
+        if options:
+            parts.append(f"Australian options to check where they fit:\n{options}")
+        return "\n\n".join(parts)
 
     def _assemble_prompt(self, pinhole: Pinhole, situation: str, au_context: Dict) -> str:
         """

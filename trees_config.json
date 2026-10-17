@@ -9,9 +9,19 @@
     "bridge": {
       "question": "If the money were sorted tomorrow, what would still be on your mind?",
       "choices": [
-        {"answer": "Worry or stress in myself", "go": "acacia"},
-        {"answer": "Tension with someone close to me", "go": "gum"},
-        {"answer": "Mostly just the money", "go": "stay", "route": "Q4"}
+        {
+          "answer": "Worry or stress in myself",
+          "go": "acacia"
+        },
+        {
+          "answer": "Tension with someone close to me",
+          "go": "gum"
+        },
+        {
+          "answer": "Mostly just the money",
+          "go": "stay",
+          "route": "Q4"
+        }
       ]
     },
     "Q1": {
@@ -30,6 +40,13 @@
         "Debt": "Q2.Debt",
         "Don't know where it goes": "Q2.Spending",
         "One-off shock": "Q3"
+      },
+      "openings": {
+        "Income too low": "my income isn't covering what I need",
+        "Spending too high": "my spending has been higher than I can manage",
+        "Debt": "I'm struggling with debt",
+        "Don't know where it goes": "my money keeps disappearing and I'm not sure where it goes",
+        "One-off shock": "a one-off cost or event has hit my finances"
       }
     },
     "Q2.Income": {
@@ -48,8 +65,34 @@
         "Recently dropped": "PINHOLE"
       },
       "pinholes": {
-        "Irregular/gig work": "Income irregularity is the real problem, not total amount — you need a buffer plan",
-        "Recently dropped": "Income shock is the real issue. Recovery takes time; don't blame yourself."
+        "Irregular/gig work": "Income irregularity is the real problem, not the total. What's missing is a buffer for the lean weeks.",
+        "Recently dropped": "This is an income shock, not a failing. Getting through the gap comes first."
+      },
+      "prompt": {
+        "Irregular/gig work": {
+          "formulation": "it's less that I earn too little overall, and more that my income arrives unevenly, so I never have a buffer for the lean weeks.",
+          "ask": [
+            "set up a simple way to smooth uneven income: how big a buffer I need, and a way to pay myself a steady amount from it",
+            "check whether I need to set money aside for tax or super because of how I'm paid"
+          ],
+          "services": [
+            "moneysmart",
+            "ato",
+            "ndh"
+          ]
+        },
+        "Recently dropped": {
+          "formulation": "my income dropped recently, and the real problem is getting through the gap while things adjust, not that I've managed badly.",
+          "ask": [
+            "work out what has to be paid first, what can wait, and what can be renegotiated",
+            "check what support I might be eligible for, and how to ask lenders or providers for hardship help"
+          ],
+          "services": [
+            "services_australia",
+            "ndh",
+            "fair_work"
+          ]
+        }
       }
     },
     "Q2.Spending": {
@@ -68,7 +111,21 @@
         "Just noticed it": "Q3"
       },
       "pinholes": {
-        "Just this month": "This is a shock response, not a systemic problem. Let this month settle."
+        "Just this month": "This looks like a rough month, not a pattern."
+      },
+      "prompt": {
+        "Just this month": {
+          "formulation": "this is a one-off month, not a pattern, and the real job is covering the gap without starting a new problem.",
+          "ask": [
+            "work out what caused this month's overspend and whether it's likely to come back",
+            "cover the shortfall without high-cost credit such as payday loans or buy now, pay later"
+          ],
+          "services": [
+            "moneysmart",
+            "nils",
+            "ndh"
+          ]
+        }
       }
     },
     "Q2.Debt": {
@@ -80,12 +137,9 @@
         "Both"
       ],
       "routes": {
-        "Debt itself (interest/repayment stress)": "PINHOLE",
+        "Debt itself (interest/repayment stress)": "Q2.DebtType",
         "Using debt to cover something else": "Q3",
         "Both": "Q3"
-      },
-      "pinholes": {
-        "Debt itself (interest/repayment stress)": "Your real problem is the repayment plan, not the debt itself. Restructure, don't panic."
       }
     },
     "Q3": {
@@ -100,9 +154,6 @@
         "Yes": "Q4",
         "No": "RECONCILE_GUM_OR_ACACIA",
         "Partly": "RECONCILE_GUM_OR_ACACIA"
-      },
-      "pinholes": {
-        "Yes": "The problem is concrete and solvable. Let's make a plan."
       }
     },
     "Q4": {
@@ -117,11 +168,175 @@
       ],
       "stops_narrowing": true,
       "pinholes": {
-        "Knowing I'm not alone": "You're carrying this alone. The first step is naming it out loud.",
-        "A plan": "You need clarity, not more money. Structure comes first.",
-        "Immediate cash": "Short-term relief is needed, but that's not a plan. Both matter.",
-        "Talking the numbers through with someone": "Talking the numbers through with someone is the missing step. Start by laying them out plainly.",
-        "Something else": "That's your signal. Build toward it this week."
+        "Knowing I'm not alone": "You've been carrying this on your own. Saying it out loud is the first step.",
+        "A plan": "What's missing is a clear plan, more than more money.",
+        "Immediate cash": "You need breathing room now, and a plan for after. Both matter.",
+        "Talking the numbers through with someone": "Talking the numbers through with someone is the step that's been missing.",
+        "Something else": "You know what would help. It just wasn't on the list."
+      },
+      "prompt": {
+        "Knowing I'm not alone": {
+          "formulation": "I've been carrying this on my own, and what would help most right now is knowing I'm not the only one and that it can be sorted.",
+          "ask": [
+            "show me how common this is and what usually helps people in my situation",
+            "help me work out who I could talk it through with, someone I know or a free service, and how to start that conversation"
+          ],
+          "services": [
+            "ndh",
+            "beyond_blue"
+          ]
+        },
+        "A plan": {
+          "formulation": "what I need most is clarity. A clear plan would help more right now than extra money.",
+          "ask": [
+            "build a simple plan from my real numbers (ask me for them one at a time)",
+            "decide what to tackle first and what can wait"
+          ],
+          "services": [
+            "moneysmart",
+            "ndh"
+          ]
+        },
+        "Immediate cash": {
+          "formulation": "I need some short-term relief right now, and I know that on its own isn't a plan. I need both.",
+          "ask": [
+            "find safe ways to get through the next few weeks (support I might be eligible for, no-interest loans, payment extensions) and which options to avoid, such as payday loans",
+            "sketch a plan so I'm not back here next month"
+          ],
+          "services": [
+            "services_australia",
+            "nils",
+            "ask_izzy",
+            "ndh"
+          ]
+        },
+        "Talking the numbers through with someone": {
+          "formulation": "what's been missing is talking the numbers through with someone. Laying them out plainly, with help, is the first step.",
+          "ask": [
+            "talk me through my numbers step by step, asking for them one at a time",
+            "help me get ready for a call with a free financial counsellor: what to have in front of me and what to ask"
+          ],
+          "services": [
+            "ndh",
+            "moneysmart"
+          ]
+        },
+        "Something else": {
+          "formulation": "none of the usual options fit what would help me. The first job is putting into words what relief would actually look like for me.",
+          "ask": [
+            "ask me what relief would look like, then help me turn it into something concrete",
+            "check whether what I describe is realistic and what would get me there"
+          ],
+          "services": [
+            "moneysmart",
+            "ndh"
+          ]
+        }
+      }
+    },
+    "not_generic": "general money tips",
+    "default_opening": "money has been tight",
+    "handoff_formulation": "The money pressure is real, but I don't think fixing the numbers alone would settle this.",
+    "Q2.DebtType": {
+      "question": "What kind of debt is it mostly?",
+      "type": "multiple_choice",
+      "answers": [
+        "Credit card or personal loan",
+        "Car loan",
+        "Buy now, pay later",
+        "Home loan",
+        "Tax or Centrelink debt",
+        "Several of these"
+      ],
+      "routes": {
+        "Credit card or personal loan": "PINHOLE",
+        "Car loan": "PINHOLE",
+        "Buy now, pay later": "PINHOLE",
+        "Home loan": "PINHOLE",
+        "Tax or Centrelink debt": "PINHOLE",
+        "Several of these": "PINHOLE"
+      },
+      "pinholes": {
+        "Credit card or personal loan": "It's the repayments squeezing you, more than the debt itself.",
+        "Car loan": "It's the repayments squeezing you, more than the debt itself.",
+        "Buy now, pay later": "It's the repayments squeezing you, more than the debt itself.",
+        "Home loan": "It's the repayments squeezing you, more than the debt itself.",
+        "Tax or Centrelink debt": "It's the repayments squeezing you, more than the debt itself.",
+        "Several of these": "It's the repayments squeezing you, more than the debt itself."
+      },
+      "prompt": {
+        "Credit card or personal loan": {
+          "formulation": "it's the repayments and interest squeezing me, more than the debt itself.",
+          "ask": [
+            "lay out ways to make the repayments manageable, including hardship arrangements with my lender",
+            "work out what to say to my lender"
+          ],
+          "services": [
+            "ndh",
+            "way_forward",
+            "afca"
+          ]
+        },
+        "Car loan": {
+          "formulation": "it's the repayments and interest squeezing me, more than the debt itself.",
+          "ask": [
+            "lay out ways to make the car loan repayments manageable, including hardship arrangements, before I fall further behind",
+            "work out what to say to my lender"
+          ],
+          "services": [
+            "ndh",
+            "way_forward",
+            "afca"
+          ]
+        },
+        "Buy now, pay later": {
+          "formulation": "it's the repayments and interest squeezing me, more than the debt itself.",
+          "ask": [
+            "lay out ways to get on top of the buy now, pay later repayments, including asking the provider for hardship help",
+            "work out what to say to the provider, and how to stop it building up again"
+          ],
+          "services": [
+            "ndh",
+            "way_forward",
+            "afca"
+          ]
+        },
+        "Home loan": {
+          "formulation": "it's the repayments and interest squeezing me, more than the debt itself.",
+          "ask": [
+            "lay out ways to make my home loan repayments manageable, including hardship arrangements, before I fall further behind",
+            "work out what to say to my lender"
+          ],
+          "services": [
+            "ndh",
+            "way_forward",
+            "afca"
+          ]
+        },
+        "Tax or Centrelink debt": {
+          "formulation": "it's the repayments squeezing me, more than the debt itself.",
+          "ask": [
+            "work out how to repay this in amounts I can afford, including a payment plan or repayment arrangement",
+            "work out what to say when I contact them"
+          ],
+          "services": [
+            "ato_plan",
+            "services_australia_debt",
+            "ndh"
+          ]
+        },
+        "Several of these": {
+          "formulation": "it's the repayments and interest squeezing me, more than the debt itself.",
+          "ask": [
+            "work out which debt to deal with first, and ways to make the repayments manageable, including hardship arrangements",
+            "work out what to say to each lender"
+          ],
+          "services": [
+            "ndh",
+            "way_forward",
+            "afca"
+          ]
+        }
       }
     }
   },

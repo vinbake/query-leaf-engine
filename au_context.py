@@ -42,6 +42,32 @@ def load_au_context() -> dict:
                     "description": "Free legal advice; what is offered varies by centre"
                 }
             ],
+            # Per-pinhole service lines (2026-10-17). Each pinhole in trees_config.json
+            # names the ones that fit it. Numbers and descriptions read from the
+            # services' own pages or MoneySmart on 2026-10-17; recheck before changing.
+            "catalogue": {
+                "ndh": "National Debt Helpline (1800 007 007, weekdays 9:30am to 4:30pm, ndh.org.au): "
+                       "free, confidential financial counselling. Aboriginal and Torres Strait Islander "
+                       "people can also call Mob Strong Debt Help (1800 808 488)",
+                "way_forward": "Way Forward (1300 045 502): free debt management support, "
+                               "including repayment plans",
+                "afca": "Australian Financial Complaints Authority (afca.org.au): free, if a lender "
+                        "won't help with financial difficulty",
+                "moneysmart": "ASIC MoneySmart (moneysmart.gov.au): free budget planner and money guides",
+                "services_australia": "Services Australia (servicesaustralia.gov.au): payments "
+                                      "I might be eligible for",
+                "fair_work": "Fair Work Ombudsman (13 13 94): if my hours or pay changed at work",
+                "ato": "Australian Taxation Office (ato.gov.au): if I'm paid as a contractor, "
+                       "what tax I need to set aside",
+                "nils": "No Interest Loans (nils.com.au): no-interest loans for essentials, "
+                        "paid straight to the supplier",
+                "ask_izzy": "Ask Izzy (askizzy.org.au): finds nearby emergency funds, food and other help",
+                "beyond_blue": "Beyond Blue (1300 22 4636): if the worry is getting heavy",
+                "ato_plan": "Australian Taxation Office (ato.gov.au): payment plans for a tax debt "
+                            "if I'm in financial difficulty",
+                "services_australia_debt": "Services Australia (servicesaustralia.gov.au): ask about "
+                                           "repaying a Centrelink debt in amounts I can afford",
+            },
             # financial_year_info (tax-free threshold, super cap) removed from Oak's prompt
             # 2026-10-14: the year was a year behind (now FY 2026-27), the super cap was
             # out of date, and neither helps a budget question. Put figures back only

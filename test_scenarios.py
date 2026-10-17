@@ -81,7 +81,7 @@ def get_test_scenarios() -> list:
                 Answer("Q1", Tree.OAK, "Spending too high"),
                 Answer("Q2.Spending", Tree.OAK, "Just this month"),
             ],
-            expected_pinhole="shock response"
+            expected_pinhole="rough month"
         ),
 
         # ========== GUM (Relationship) ==========
