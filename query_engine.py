@@ -537,11 +537,12 @@ Important: Keep this practical and specific to my situation."""
         parts = [
             f"I'm in Australia and {opening}. Here's what I think is really going on: {spec['formulation']}",
             f"What I told the Query Leaf:\n{situation}",
-            # The Wise Man has already asked the questions (Phil, 2026-10-17): the AI answers
-            # straight away, and says what it assumed rather than starting a round of questions.
-            f"Please answer straight away from what I've told you. Work on that root cause first, not {not_this}. "
+            # D38 (2026-10-17): the Wise Man has already asked the questions. The AI must not
+            # ask more — it answers straight away and states assumptions rather than asking.
+            f"Please answer straight away — do not ask me any clarifying questions. "
+            f"Work on that root cause first, not {not_this}. "
             "If my reading doesn't fit what I've said, or you need something I haven't told you, "
-            "say so in a line and tell me what you've assumed.",
+            "say so in one line and tell me what you've assumed, then answer.",
             f"Please help me:\n{ask_lines}",
             "If you're unsure of a figure or rule, say so rather than guessing. Keep it plain and practical.",
         ]
@@ -551,27 +552,27 @@ Important: Keep this practical and specific to my situation."""
 
     def _assemble_prompt(self, pinhole: Pinhole, situation: str, au_context: Dict) -> str:
         """
-        Assemble rich prompt per spec structure:
-        [Situation + Context]
-        [Specific ask]
-        [AU resource ask]
-        [Constraint]
+        Generic fallback prompt — used when a tree node has no D38 spec written yet.
+        Mirrors the voice and anti-question structure of _assemble_from_spec so visitors
+        get a consistent experience regardless of which tree they ran.
+        Updated 2026-10-23: added first-person voice, explicit no-questions directive,
+        and structured (a)/(b) asks to match D38 standard.
         """
-        prompt = f"""
-{pinhole.root_cause}
+        au_block = self._format_au_context(au_context)
+        au_line = f"\n\nAustralian context:\n{au_block}" if au_block else ""
+        prompt = f"""I'm in Australia and here's what I think is really going on: {pinhole.root_cause}
 
-Situation:
+What I described to the Query Leaf:
 {situation}
 
-Specific ask:
-Help me understand what's really happening here and what one step I could take this week.
+Please answer straight away — do not ask me any clarifying questions. If my reading doesn't fit what I've said, or you need something I haven't told you, say so in one line and tell me what you've assumed, then answer.
 
-Australian context:
-{self._format_au_context(au_context)}
+Please help me:
+(a) understand what's actually driving this, in plain terms
+(b) pick one step I can take this week{au_line}
 
-Important: Keep this practical and specific to my situation.
-""".strip()
-        return prompt
+If you're unsure of a figure or rule, say so rather than guessing. Keep it plain and practical."""
+        return prompt.strip()
 
     def _generate_share_code(self) -> str:
         """
