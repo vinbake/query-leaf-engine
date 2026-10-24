@@ -107,7 +107,37 @@ def load_au_context() -> dict:
                 }
             ],
             "cultural_note": "Australian relationships often value directness over conflict avoidance. Frame conversations as 'team huddle', not accusation.",
-            "prompt_guidance": "Offer Relationships Australia as the primary pathway. If domestic violence is mentioned, always reference 1800Respect. Emphasize team language over blame."
+            "prompt_guidance": "Offer Relationships Australia as the primary pathway. If domestic violence is mentioned, always reference 1800Respect. Emphasize team language over blame.",
+            # Per-pinhole service lines (2026-10-24), as for Oak. Numbers and hours read
+            # from each service's own page on 2026-10-24; recheck before changing.
+            # Parentline differs by state, so no single number is given.
+            "catalogue": {
+                "relationships_australia": "Relationships Australia (1300 364 277, relationships.org.au): "
+                                           "couples and family counselling, including by phone or video",
+                "mensline": "MensLine Australia (1300 78 99 78, 24/7): free phone and online counselling for men",
+                "beyond_blue": "Beyond Blue (1300 22 4636): if it's getting heavy",
+                "family_relationship_advice_line": "Family Relationship Advice Line (1800 050 321, weekdays "
+                                                   "8am to 8pm, Saturday 10am to 4pm): free advice for "
+                                                   "families going through relationship problems or separation",
+                "parentline": "Parentline: free phone support for parents; the number differs by state",
+                "raising_children_network": "Raising Children Network (raisingchildren.net.au): "
+                                            "free parenting guides, including for separated families",
+            },
+            # Shown on the family-violence safety screen, never in a prompt (2026-10-24).
+            # Written from 1800RESPECT's own safety-planning page, read 2026-10-24
+            # (1800respect.org.au/help-and-support/safety-planning). Recheck it there
+            # before changing any line.
+            "safety_plan": [
+                "If you're in danger right now, call 000.",
+                "Keep your phone on you, or keep a second phone that's safe to use.",
+                "Pick a safe place you could go to if you need to leave quickly.",
+                "Pack a bag ahead of time with the things you'd need, and keep it somewhere safe.",
+                "Tell someone you trust that you don't feel safe.",
+                "If there are children, talk with them about their part in the plan.",
+                "Arrange who could look after your pets.",
+                "Keep your plan somewhere private, and update it when things change.",
+                "1800RESPECT can help you make a plan: call 1800 737 732 or text 0458 737 732, any time.",
+            ],
         },
 
         "acacia": {

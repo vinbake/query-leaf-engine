@@ -133,6 +133,26 @@ def _sweep():
     share_sweep()
 
 
+# Family-violence screen (Gum, 2026-10-24). Same shape as CRISIS, so a park that only
+# knows lifeline and beyond_blue still shows working numbers. 1800RESPECT numbers read
+# from 1800respect.org.au on 2026-10-24. The safety list lives in au_context (D29).
+CRISIS_FV = {
+    "kind": "family_violence",
+    "emergency": "000",
+    "respect": "1800 737 732",
+    "respect_text": "0458 737 732",
+    "lifeline": "13 11 14",
+    "beyond_blue": "1300 22 4636",
+    "message": "If you're in danger right now, call 000. 1800RESPECT is free and open 24/7: "
+               "call 1800 737 732 or text 0458 737 732. They can help you make a safety plan.",
+    "safety_plan": AU.get("gum", {}).get("safety_plan", []),
+}
+
+
+def _crisis_for(eng):
+    return CRISIS_FV if getattr(eng, "crisis_kind", None) == "family_violence" else CRISIS
+
+
 def _node_view(tree, node_id):
     node = TREES.get(tree, {}).get(node_id)
     if not node:
@@ -144,6 +164,8 @@ def _node_view(tree, node_id):
     if node.get("safety_check"):
         # The helplines sit on the safety question itself (Phil, 2026-10-13).
         view["help"] = {"lifeline": CRISIS["lifeline"], "beyond_blue": CRISIS["beyond_blue"]}
+        if node.get("crisis_kind") == "family_violence":
+            view["help"]["respect"] = CRISIS_FV["respect"]
     return view
 
 
@@ -196,7 +218,7 @@ def _answer_once(body):
     result = eng.add_answer(Answer(node_id=node_id, tree=tree, user_response=text))
 
     if result == "CRISIS_ROUTE":
-        return 200, {"ok": True, "status": "CRISIS_ROUTE", "crisis": CRISIS}
+        return 200, {"ok": True, "status": "CRISIS_ROUTE", "crisis": _crisis_for(eng)}
     if result == "PINHOLE":
         return 200, {"ok": True, "status": "PINHOLE",
                      "pinhole": _pinhole_dict(eng.pinholes[tree])}
@@ -250,7 +272,7 @@ def finalize(body):
     found = {t: p for t, p in eng.pinholes.items() if p is not None}
     if any(p.root_cause == "CRISIS_ROUTE" for p in found.values()):
         # A crisis route never becomes a prompt and is never counted.
-        return 200, {"ok": True, "status": "CRISIS_ROUTE", "crisis": CRISIS}
+        return 200, {"ok": True, "status": "CRISIS_ROUTE", "crisis": _crisis_for(eng)}
     if tree not in found and not found:
         return 409, {"ok": False, "error": "no pinhole reached for this tree yet"}
     done = s.setdefault("final", {})
@@ -456,6 +478,37 @@ def selftest():
         hist = [a.node_id for a in SESSIONS[sid5]["engine"].answer_history]
         check("15 Resent answer counted once", r1 == r2 and hist == ["Q1"],
               f"same reply on a resend; answers held: {len(hist)}")
+
+        # 16-17: Gum's affair path (Phil, 2026-10-24). It used to stop at question 2
+        # with a phone number; it now narrows to a plan, and a safety answer goes to
+        # the family-violence screen, never to a prompt.
+        affair = [("gum", "Q1", "Trust broke"), ("gum", "Q2.Trust", "An affair"),
+                  ("gum", "Q.Affair.Whose", "Mine"), ("gum", "Q.Affair.Safety", "No"),
+                  ("gum", "Q.Affair.Now", "It's over and we're still together"),
+                  ("gum", "Q.Affair.Signs", "A few, looking back"),
+                  ("gum", "Q.Affair.Kids", "Yes, under 18"),
+                  ("gum", "Q.Affair.Tied", "We own or rent together"),
+                  ("gum", "Q.Affair.Steps", "Booked or seen a counsellor"),
+                  ("gum", "Q.Affair.Want", "Try to repair it")]
+        sid6, r = run("gum", affair)
+        _, f6 = finalize({"session_id": sid6, "tree": "gum", "qa": True})
+        codes.append(f6.get("share_code", ""))
+        text6 = f6.get("prompt_text", "")
+        check("16 Gum affair path to a plan",
+              r.get("status") == "PINHOLE" and "Whose affair was it? — Mine" in text6
+              and "Are there children in this? — Yes, under 18" in text6
+              and "1300 364 277" in text6 and "do not ask me any clarifying questions" in text6
+              and "threatened" not in text6 and "Do that first" not in text6,
+              "10 questions, answers carried into the prompt, safety answer left out")
+        sid7, r = run("gum", affair[:3] + [("gum", "Q.Affair.Safety", "I'm not sure")])
+        _, f7 = finalize({"session_id": sid7, "tree": "gum", "qa": True})
+        c = r.get("crisis", {})
+        check("17 Gum safety answer to the family-violence screen",
+              r.get("status") == "CRISIS_ROUTE" and c.get("kind") == "family_violence"
+              and c.get("respect") == "1800 737 732" and c.get("emergency") == "000"
+              and len(c.get("safety_plan", [])) >= 5
+              and f7.get("status") == "CRISIS_ROUTE" and "prompt_text" not in f7,
+              "000, 1800RESPECT and the safety list shown; no prompt made")
     except Exception as e:
         check("selftest runner", False, type(e).__name__)
     finally:

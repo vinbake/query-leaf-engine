@@ -80,6 +80,7 @@ class QueryEngine:
         self.au_context = au_context_config
         self.answer_history: List[Answer] = []
         self.pinholes: Dict[Tree, Optional[Pinhole]] = {tree: None for tree in Tree}
+        self.crisis_kind: Optional[str] = None
 
     def add_answer(self, answer: Answer) -> Optional[str]:
         """
@@ -119,11 +120,16 @@ class QueryEngine:
         if not current_node:
             return None
 
-        # 1. Check for crisis routes (Acacia.Q4 safety check)
-        if tree == Tree.ACACIA and answer.node_id == "Q4":
-            safety = self._evaluate_safety(answer.user_response)
-            if safety in [SafetyLevel.UNSURE, SafetyLevel.AT_RISK]:
-                return self._crisis_route()
+        # 1. Check for crisis routes. Any node marked safety_check can send the visitor
+        # to a crisis screen (2026-10-24: Gum's affair path, not only Acacia Q4). The
+        # node's own routes decide; Acacia Q4 keeps its phrase check as well. The
+        # node's crisis_kind picks which helplines the screen shows.
+        if current_node.get("safety_check"):
+            routed = current_node.get("routes", {}).get(answer.user_response) == "CRISIS_ROUTE"
+            flagged = (tree == Tree.ACACIA and answer.node_id == "Q4" and
+                       self._evaluate_safety(answer.user_response) in [SafetyLevel.UNSURE, SafetyLevel.AT_RISK])
+            if routed or flagged:
+                return self._crisis_route(tree, answer.node_id, current_node.get("crisis_kind", "self_harm"))
 
         # 2. Check if answer points to a pinhole
         pinhole = self._detect_pinhole(tree, answer.node_id, answer.user_response)
@@ -264,15 +270,17 @@ class QueryEngine:
             return SafetyLevel.UNSURE
         return SafetyLevel.SAFE
 
-    def _crisis_route(self) -> str:
-        """Return crisis help indicator and set crisis pinhole"""
+    def _crisis_route(self, tree: Tree = Tree.ACACIA, node_id: str = "Q4", kind: str = "self_harm") -> str:
+        """Return crisis help indicator and set crisis pinhole. The kind (self_harm or
+        family_violence) tells the app which helplines to show; nothing else is kept."""
         crisis_pinhole = Pinhole(
-            tree=Tree.ACACIA,
+            tree=tree,
             root_cause="CRISIS_ROUTE",
             confidence=1.0,
-            signals=["Q4"]
+            signals=[node_id]
         )
-        self.pinholes[Tree.ACACIA] = crisis_pinhole
+        self.pinholes[tree] = crisis_pinhole
+        self.crisis_kind = kind
         return "CRISIS_ROUTE"
 
     def _detect_pinhole(self, tree: Tree, node_id: str, response: str) -> Optional[Pinhole]:
@@ -316,6 +324,8 @@ class QueryEngine:
         Returns (trees_involved, root_cause_narrative)
         """
         identified = {t: p for t, p in self.pinholes.items() if p is not None}
+        if any(p.root_cause == "CRISIS_ROUTE" for p in identified.values()):
+            return None  # a crisis route on any tree is never reconciled (2026-10-24)
 
         # Pattern 1: Gum + Acacia: "Fighting about money" + "Sleeping badly"
         # Fixed 2026-10-05 (ISSUE-001): match on the tree pair, like patterns 2 and 3.

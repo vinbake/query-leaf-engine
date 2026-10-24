@@ -366,6 +366,13 @@
       },
       "pinholes": {
         "I don't feel heard": "Not feeling heard is the heart of it. What needs to change is how you're listened to, not what you're arguing about."
+      },
+      "openings": {
+        "We're fighting": "we keep fighting",
+        "We're distant": "we've grown distant",
+        "I don't feel heard": "I don't feel heard in my relationship",
+        "Trust broke": "trust has broken down in my relationship",
+        "I don't know how to talk about it": "something's wrong in my relationship and I don't know how to talk about it"
       }
     },
     "Q2.Fighting": {
@@ -442,14 +449,177 @@
         "I'm not sure"
       ],
       "routes": {
-        "An affair": "PINHOLE",
+        "An affair": "Q.Affair.Whose",
         "A lie": "Q3",
         "A broken promise": "Q3",
         "Neglect over time": "Q3",
         "I'm not sure": "Q3"
-      },
+      }
+    },
+    "Q.Affair.Whose": {
+      "question": "Whose affair was it?",
+      "type": "multiple_choice",
+      "answers": [
+        "My partner's",
+        "Mine",
+        "I suspect it but I don't know"
+      ],
+      "routes": {
+        "My partner's": "Q.Affair.Safety",
+        "Mine": "Q.Affair.Safety",
+        "I suspect it but I don't know": "Q.Affair.Safety"
+      }
+    },
+    "Q.Affair.Safety": {
+      "question": "Since this came out, has anyone threatened you, scared you, or tried to control what you do?",
+      "type": "multiple_choice",
+      "answers": [
+        "No",
+        "Yes",
+        "I'm not sure",
+        "I'd rather not say"
+      ],
+      "safety_check": true,
+      "crisis_kind": "family_violence",
+      "note": "You don't have to answer this. We only ask so we can point you to the right help. Your answer isn't saved and won't appear in your prompt.",
+      "routes": {
+        "No": "Q.Affair.Now",
+        "Yes": "CRISIS_ROUTE",
+        "I'm not sure": "CRISIS_ROUTE",
+        "I'd rather not say": "Q.Affair.Now"
+      }
+    },
+    "Q.Affair.Now": {
+      "question": "Where do things stand right now?",
+      "type": "multiple_choice",
+      "answers": [
+        "It's over and we're still together",
+        "It's still going",
+        "We've split up",
+        "I don't know yet"
+      ],
+      "routes": {
+        "It's over and we're still together": "Q.Affair.Signs",
+        "It's still going": "Q.Affair.Signs",
+        "We've split up": "Q.Affair.Signs",
+        "I don't know yet": "Q.Affair.Signs"
+      }
+    },
+    "Q.Affair.Signs": {
+      "question": "Looking back, were there signs things weren't right before this?",
+      "type": "multiple_choice",
+      "answers": [
+        "Yes, things were already bad between us",
+        "A few, looking back",
+        "No, it came out of nowhere"
+      ],
+      "routes": {
+        "Yes, things were already bad between us": "Q.Affair.Kids",
+        "A few, looking back": "Q.Affair.Kids",
+        "No, it came out of nowhere": "Q.Affair.Kids"
+      }
+    },
+    "Q.Affair.Kids": {
+      "question": "Are there children in this?",
+      "type": "multiple_choice",
+      "answers": [
+        "Yes, under 18",
+        "Yes, all grown up",
+        "No"
+      ],
+      "routes": {
+        "Yes, under 18": "Q.Affair.Tied",
+        "Yes, all grown up": "Q.Affair.Tied",
+        "No": "Q.Affair.Tied"
+      }
+    },
+    "Q.Affair.Tied": {
+      "question": "Are your home or money tied together?",
+      "type": "multiple_choice",
+      "answers": [
+        "We own or rent together",
+        "Shared money, separate homes",
+        "Not really"
+      ],
+      "routes": {
+        "We own or rent together": "Q.Affair.Steps",
+        "Shared money, separate homes": "Q.Affair.Steps",
+        "Not really": "Q.Affair.Steps"
+      }
+    },
+    "Q.Affair.Steps": {
+      "question": "What have you done so far, or plan to do?",
+      "type": "multiple_choice",
+      "answers": [
+        "Nothing yet, still taking it in",
+        "We've talked it through",
+        "I've told a friend or family",
+        "Booked or seen a counsellor",
+        "Thinking about separating",
+        "Already decided to separate"
+      ],
+      "routes": {
+        "Nothing yet, still taking it in": "Q.Affair.Want",
+        "We've talked it through": "Q.Affair.Want",
+        "I've told a friend or family": "Q.Affair.Want",
+        "Booked or seen a counsellor": "Q.Affair.Want",
+        "Thinking about separating": "Q.Affair.Want",
+        "Already decided to separate": "Q.Affair.Want"
+      }
+    },
+    "Q.Affair.Want": {
+      "question": "What do you want to happen?",
+      "type": "multiple_choice",
+      "answers": [
+        "Try to repair it",
+        "End it and move on well",
+        "I don't know yet"
+      ],
+      "stops_narrowing": true,
       "pinholes": {
-        "An affair": "This needs professional help. Relationships Australia 1300 364 277. Do that first."
+        "Try to repair it": "You want to repair it. That needs a plan you both sign up to, not just forgiveness.",
+        "End it and move on well": "You've decided. Now it's about ending it well, for you and for the kids if there are any.",
+        "I don't know yet": "You don't have to decide yet. The job right now is getting steady enough to decide well."
+      },
+      "prompt": {
+        "Try to repair it": {
+          "formulation": "there's been an affair, and I want to try to repair the relationship. What I need is a realistic plan: what repair actually involves, what each of us would have to do, and how we'd know it's working.",
+          "ask": [
+            "lay out what rebuilding trust after an affair usually involves, stage by stage, and the signs it's working or not, fitted to what I've told you (whose affair, whether it's over, whether things were bad before, the kids). Give me the plain version, not the hopeful one",
+            "help me prepare for a first couples counselling session: what to say first, what to ask the counsellor, and what to agree between us before we go"
+          ],
+          "services": [
+            "relationships_australia",
+            "mensline",
+            "beyond_blue"
+          ]
+        },
+        "End it and move on well": {
+          "formulation": "there's been an affair and it has ended things for me. What I need now is to separate well: look after myself, sort out the practical side, and protect the kids if there are any.",
+          "ask": [
+            "give me the first practical steps to separate in Australia, in order: where each of us lives, money and anything we own or rent together, and what has to be sorted first",
+            "if there are children under 18, help me work out what to tell them and how parenting arrangements are usually agreed in Australia (family dispute resolution comes before any court), and what to ask a family lawyer at a first appointment"
+          ],
+          "services": [
+            "family_relationship_advice_line",
+            "relationships_australia",
+            "parentline",
+            "raising_children_network",
+            "beyond_blue"
+          ]
+        },
+        "I don't know yet": {
+          "formulation": "there's been an affair and I don't know yet whether I want to stay or go. What I need is to get through the next few weeks without making a decision I regret, and a clear way to work out what I actually want.",
+          "ask": [
+            "give me a plan for the next two to four weeks: what to do, what not to decide yet, and how to keep myself going (sleep, work, the kids if there are any)",
+            "help me work out what I want: the questions to ask myself, and what would point towards repairing it or ending it, and tell me straight whether one counselling session on my own first would help"
+          ],
+          "services": [
+            "relationships_australia",
+            "mensline",
+            "beyond_blue"
+          ]
+        }
       }
     },
     "Q3": {
@@ -486,7 +656,9 @@
         "They know but nothing changes": "This is the real problem—they're choosing not to. That's a decision you need to make about.",
         "I've said it but I don't think they heard me": "Being heard/seen is a core wellbeing signal. Start there, not with fixing the relationship."
       }
-    }
+    },
+    "default_opening": "something's off in a close relationship",
+    "not_generic": "general relationship advice"
   },
   "acacia": {
     "name": "Acacia (Wellbeing) — Owl Tree",
