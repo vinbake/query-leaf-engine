@@ -498,7 +498,8 @@ def selftest():
               r.get("status") == "PINHOLE" and "Whose affair was it? — Mine" in text6
               and "Are there children in this? — Yes, under 18" in text6
               and "1300 364 277" in text6 and "do not ask me any clarifying questions" in text6
-              and "threatened" not in text6 and "Do that first" not in text6,
+              and "threatened" not in text6 and "Do that first" not in text6
+              and "read on a phone" in text6,
               "10 questions, answers carried into the prompt, safety answer left out")
         sid7, r = run("gum", affair[:3] + [("gum", "Q.Affair.Safety", "I'm not sure")])
         _, f7 = finalize({"session_id": sid7, "tree": "gum", "qa": True})

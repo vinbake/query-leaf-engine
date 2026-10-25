@@ -434,7 +434,7 @@ Help me understand how these connect, what is really driving it, and what one st
 Australian context:
 """ + "\n".join(contexts) + """
 
-Important: Keep this practical and specific to my situation."""
+Important: Keep this practical and specific to my situation. Keep it short enough to read on a phone without much scrolling: the key points first, in a few short lines, then any detail underneath."""
         pinhole = Pinhole(tree=trees[0], root_cause=lead, confidence=0.8,
                           signals=[t.value for t in trees])
         return PromptOutput(
@@ -554,7 +554,9 @@ Important: Keep this practical and specific to my situation."""
             "If my reading doesn't fit what I've said, or you need something I haven't told you, "
             "say so in one line and tell me what you've assumed, then answer.",
             f"Please help me:\n{ask_lines}",
-            "If you're unsure of a figure or rule, say so rather than guessing. Keep it plain and practical.",
+            "If you're unsure of a figure or rule, say so rather than guessing. Keep it plain and practical. "
+            # Phil, 2026-10-25: a good ChatGPT answer still meant "continual scrolling" on a phone.
+            "Keep it short enough to read on a phone without much scrolling: the key points first, in a few short lines, then any detail underneath.",
         ]
         if options:
             parts.append(f"Australian options to check where they fit:\n{options}")
@@ -581,7 +583,7 @@ Please help me:
 (a) understand what's actually driving this, in plain terms
 (b) pick one step I can take this week{au_line}
 
-If you're unsure of a figure or rule, say so rather than guessing. Keep it plain and practical."""
+If you're unsure of a figure or rule, say so rather than guessing. Keep it plain and practical. Keep it short enough to read on a phone without much scrolling: the key points first, in a few short lines, then any detail underneath."""
         return prompt.strip()
 
     def _generate_share_code(self) -> str:
