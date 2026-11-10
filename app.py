@@ -29,6 +29,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
 
 import counts
+import reach
 from query_engine import QueryEngine, Answer, Tree
 from trees_config import load_trees_config
 from au_context import load_au_context
@@ -285,6 +286,12 @@ def visit(body):
     return (200, {"ok": True}) if ok else (200, {"ok": False, "reason": reason})
 
 
+def reach_post(body):
+    """The optional postcode and age band a visitor chose to give (reach.py: a monthly tally, nothing linked)."""
+    ok, reason = reach.record(body.get("postcode"), body.get("band"), bool(body.get("qa")))
+    return (200, {"ok": True}) if ok else (200, {"ok": False, "reason": reason})
+
+
 def tap(code, body):
     ok, reason = counts.record_tap(code.upper(), str(body.get("type", "")))
     if ok:
@@ -501,6 +508,8 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/metrics":
             as_of = parse_qs(urlsplit(self.path).query).get("as_of", [None])[0]
             return self._send(200, counts.metrics(as_of))
+        if path == "/api/reach":
+            return self._send(200, reach.readout())
         if path == "/api/entry":
             return self._send(200, {"ok": True, "entry": {
                 t: {"statement": TREES[t].get("entry_statement", ""),
@@ -524,7 +533,7 @@ class Handler(BaseHTTPRequestHandler):
         except Exception:
             return self._send(400, {"ok": False, "error": "invalid JSON"})
         routes = {"/api/session/start": start, "/api/session/answer": answer,
-                  "/api/session/finalize": finalize, "/api/visit": visit}
+                  "/api/session/finalize": finalize, "/api/visit": visit, "/api/reach": reach_post}
         fn = routes.get(path)
         m = re.fullmatch(r"/api/prompt/([A-Za-z0-9]{6})/(tap|feedback)", path)
         if m:
@@ -546,6 +555,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", "8080"))
     _db_init()
     counts.init()
+    reach.init()
     print(f"Share store: {'postgres' if USE_DB else 'memory'}; counting store: {'postgres' if counts.USE_DB else 'memory'}", flush=True)
     print(f"Engine initialized. Trees: {list(TREES)}. Listening on {port}", flush=True)
     ThreadingHTTPServer(("0.0.0.0", port), Handler).serve_forever()
