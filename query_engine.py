@@ -52,6 +52,7 @@ class Pinhole:
     signals: List[str]  # which answers triggered this
     needs_reconciliation: bool = False
     secondary_trees: List[Tree] = None
+    professional: Optional[str] = None  # D42 (2026-11-15): the professional this pinhole belongs to, if any
 
 
 @dataclass
@@ -153,6 +154,7 @@ class QueryEngine:
                 root_cause=current_node.get("default_pinhole") or f"The heart of it: {answer.user_response.lower()}.",
                 confidence=0.7,
                 signals=[answer.node_id],
+                professional=self._professional_for(current_node, answer.user_response),
             )
             if self._has_cross_tree_signals():
                 return "RECONCILE"
@@ -205,7 +207,7 @@ class QueryEngine:
             # The Wise Man's handoff (2026-10-17): the pinhole travels as the
             # visitor's own working view, the visitor's AI is asked to check it
             # first, and the ask and services are chosen for that pinhole.
-            prompt_text = self._assemble_from_spec(tree, spec, situation, au_context)
+            prompt_text = self._assemble_from_spec(tree, spec, situation, au_context, pinhole)
         else:
             prompt_text = self._assemble_prompt(
                 pinhole=pinhole,
@@ -275,6 +277,42 @@ class QueryEngine:
         self.pinholes[Tree.ACACIA] = crisis_pinhole
         return "CRISIS_ROUTE"
 
+    # D42 (Phil, 2026-11-15): a pinhole that really belongs to a professional carries a
+    # "professional" key on its node (one value, or a map keyed by answer). The handoff
+    # then asks the visitor's AI for a question list to take to that appointment, in
+    # place of "pick one step". The park still gives no advice and no diagnosis.
+    DEFAULT_PROFESSIONALS = {
+        "gp": "GP",
+        "dietitian": "GP, or an Accredited Practising Dietitian",
+        "exercise_physiologist": "GP, or an accredited exercise physiologist",
+        "physio": "GP or physiotherapist",
+        "psychologist": "GP, for a referral to a psychologist",
+        "financial_counsellor": "financial counsellor",
+        "lawyer": "family lawyer",
+        "mediator": "family mediator",
+        "relationship_counsellor": "relationship counsellor",
+    }
+
+    def _professional_for(self, node: Dict, response: str) -> Optional[str]:
+        prof = node.get("professional")
+        if isinstance(prof, dict):
+            return prof.get(response)
+        return prof if isinstance(prof, str) and prof else None
+
+    def _professional_label(self, key: Optional[str]) -> Optional[str]:
+        if not key:
+            return None
+        labels = dict(self.DEFAULT_PROFESSIONALS)
+        labels.update(self.au_context.get("_professionals", {}) or {})
+        return labels.get(key, key.replace("_", " "))
+
+    def _professional_ask(self, key: Optional[str]) -> Optional[str]:
+        label = self._professional_label(key)
+        if not label:
+            return None
+        return (f"write me a short list of questions to take to my {label}, in the order to ask them, "
+                "and the two or three things I should tell them first")
+
     def _detect_pinhole(self, tree: Tree, node_id: str, response: str) -> Optional[Pinhole]:
         """
         Check if this answer + history points to a pinhole (stop narrowing).
@@ -284,13 +322,15 @@ class QueryEngine:
 
         # Check if this node ends narrowing (has "pinholes" field)
         pinholes = node.get("pinholes", {})
+        professional = self._professional_for(node, response)
         if pinholes and response in pinholes:
             pinhole_text = pinholes[response]
             return Pinhole(
                 tree=tree,
                 root_cause=pinhole_text,
                 confidence=0.85,
-                signals=[node_id]
+                signals=[node_id],
+                professional=professional,
             )
 
         # Check if node config says "stops_narrowing"
@@ -300,7 +340,8 @@ class QueryEngine:
                 tree=tree,
                 root_cause=pinhole_text,
                 confidence=0.75,
-                signals=[node_id]
+                signals=[node_id],
+                professional=professional,
             )
 
         return None
@@ -521,14 +562,19 @@ Important: Keep this practical and specific to my situation."""
             return cfg["handoff_formulation"]
         return pinhole.root_cause
 
-    def _assemble_from_spec(self, tree: Tree, spec: Dict, situation: str, au_context: Dict) -> str:
+    def _assemble_from_spec(self, tree: Tree, spec: Dict, situation: str, au_context: Dict,
+                            pinhole: Optional[Pinhole] = None) -> str:
         cfg = self.trees.get(tree.value, {})
         q1 = next((a.user_response for a in self.answer_history
                    if a.tree == tree and a.node_id == "Q1"), None)
         opening = (cfg.get("Q1", {}).get("openings", {}) or {}).get(q1) \
             or cfg.get("default_opening", "I'm trying to work out what's really going on")
         not_this = cfg.get("not_generic", "general tips")
-        ask = list(spec.get("ask", []))[:2] + ["pick one step I can take this week"]
+        # D42: where the pinhole belongs to a professional, the third ask is the question
+        # list for that appointment instead of "pick one step".
+        third = self._professional_ask(pinhole.professional if pinhole else None) \
+            or "pick one step I can take this week"
+        ask = list(spec.get("ask", []))[:2] + [third]
         letters = "abc"
         ask_lines = "\n".join(f"({letters[i]}) {a}" for i, a in enumerate(ask))
         catalogue = au_context.get("catalogue", {})
@@ -560,7 +606,12 @@ Important: Keep this practical and specific to my situation."""
         """
         au_block = self._format_au_context(au_context)
         au_line = f"\n\nAustralian context:\n{au_block}" if au_block else ""
-        prompt = f"""I'm in Australia and here's what I think is really going on: {pinhole.root_cause}
+        second = self._professional_ask(pinhole.professional) or "pick one step I can take this week"
+        # 2026-11-15: on-screen pinhole lines are questions (D40); a question does not read
+        # as "what I think is really going on", so it is carried as the question instead.
+        lead = ("here's the question I keep coming back to" if pinhole.root_cause.rstrip().endswith("?")
+                else "here's what I think is really going on")
+        prompt = f"""I'm in Australia and {lead}: {pinhole.root_cause}
 
 What I described to the Query Leaf:
 {situation}
@@ -569,7 +620,7 @@ Please answer straight away — do not ask me any clarifying questions. If my re
 
 Please help me:
 (a) understand what's actually driving this, in plain terms
-(b) pick one step I can take this week{au_line}
+(b) {second}{au_line}
 
 If you're unsure of a figure or rule, say so rather than guessing. Keep it plain and practical."""
         return prompt.strip()

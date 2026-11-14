@@ -360,13 +360,11 @@
       "routes": {
         "We're fighting": "Q2.Fighting",
         "We're distant": "Q2.Distant",
-        "I don't feel heard": "PINHOLE",
+        "I don't feel heard": "Q2.Heard",
         "Trust broke": "Q2.Trust",
         "I don't know how to talk about it": "Q4"
       },
-      "pinholes": {
-        "I don't feel heard": "Not feeling heard is the heart of it. What needs to change is how you're listened to, not what you're arguing about."
-      }
+      "pinholes": {}
     },
     "Q2.Fighting": {
       "question": "What do you fight about?",
@@ -482,9 +480,28 @@
       ],
       "stops_narrowing": true,
       "pinholes": {
-        "Not yet": "You're waiting for them to notice. They won't. You have to speak first.",
-        "They know but nothing changes": "This is the real problem—they're choosing not to. That's a decision you need to make about.",
-        "I've said it but I don't think they heard me": "Being heard/seen is a core wellbeing signal. Start there, not with fixing the relationship."
+        "Not yet": "If you said it plainly, once, what are you afraid would happen?",
+        "They know but nothing changes": "They know, and nothing has changed. Is that a can't or a won't, and what does that tell you?",
+        "I've said it but I don't think they heard me": "What would it take for you to feel heard: a change in how they listen, or in what you ask for?"
+      },
+      "professional": {
+        "They know but nothing changes": "relationship_counsellor"
+      }
+    },
+    "Q2.Heard": {
+      "question": "When you say something that matters, what usually happens?",
+      "type": "multiple_choice",
+      "answers": [
+        "They talk over me or change the subject",
+        "They listen, then nothing changes",
+        "It turns into a fight",
+        "I've stopped saying it"
+      ],
+      "routes": {
+        "They talk over me or change the subject": "Q4",
+        "They listen, then nothing changes": "Q4",
+        "It turns into a fight": "Q4",
+        "I've stopped saying it": "Q4"
       }
     }
   },
@@ -509,8 +526,8 @@
         "I can't sleep": "Q2.Sleep",
         "I'm exhausted but wired": "Q2.Wired",
         "Everything feels too much": "Q4",
-        "I can't focus": "Q3",
-        "Anxious all the time": "Q3"
+        "I can't focus": "Q2.Focus",
+        "Anxious all the time": "Q2.Anxious"
       }
     },
     "Q2.Sleep": {
@@ -605,6 +622,84 @@
         "Ongoing": "This is your baseline. Chronic stress needs a structural change, not a fix.",
         "It was temporary but now it's stuck": "You've been in this state so long it feels normal. It's not. Reset is possible."
       }
+    },
+    "Q2.Focus": {
+      "question": "Is it everything, or one thing you can't face?",
+      "type": "multiple_choice",
+      "answers": [
+        "Everything, my head won't settle",
+        "One thing I keep avoiding",
+        "It comes and goes and I can't tell why",
+        "It's been like this as long as I can remember"
+      ],
+      "routes": {
+        "Everything, my head won't settle": "Q3.Focus",
+        "One thing I keep avoiding": "Q3.Focus",
+        "It comes and goes and I can't tell why": "Q3.Focus",
+        "It's been like this as long as I can remember": "Q3.Focus"
+      }
+    },
+    "Q3.Focus": {
+      "question": "What's the one thing that would make the most difference right now?",
+      "type": "multiple_choice",
+      "answers": [
+        "Rest",
+        "Someone to talk to",
+        "A break",
+        "Fixing the thing that's stressing me",
+        "Understanding why I feel this way"
+      ],
+      "stops_narrowing": true,
+      "routes": {},
+      "pinholes": {
+        "Rest": "Is the focus gone, or are you too tired to use it?",
+        "Someone to talk to": "Who knows your head won't settle, and what would saying it out loud change?",
+        "A break": "If you stopped for a week, would the focus come back, or would the worry follow you?",
+        "Fixing the thing that's stressing me": "Is the thing you can't face eating the focus, and what is the smallest piece of it?",
+        "Understanding why I feel this way": "What changed around the time the focus went?"
+      },
+      "professional": {
+        "Understanding why I feel this way": "gp"
+      }
+    },
+    "Q2.Anxious": {
+      "question": "Is it about something specific, or everything?",
+      "type": "multiple_choice",
+      "answers": [
+        "One thing I can name",
+        "It jumps from thing to thing",
+        "There's nothing to point at, it's just there",
+        "It's worse at a particular time of day"
+      ],
+      "routes": {
+        "One thing I can name": "Q3.Anxious",
+        "It jumps from thing to thing": "Q3.Anxious",
+        "There's nothing to point at, it's just there": "Q3.Anxious",
+        "It's worse at a particular time of day": "Q3.Anxious"
+      }
+    },
+    "Q3.Anxious": {
+      "question": "What's the one thing that would make the most difference right now?",
+      "type": "multiple_choice",
+      "answers": [
+        "Rest",
+        "Someone to talk to",
+        "A break",
+        "Fixing the thing that's stressing me",
+        "Understanding why I feel this way"
+      ],
+      "stops_narrowing": true,
+      "routes": {},
+      "pinholes": {
+        "Rest": "Is it anxiety, or exhaustion wearing the same clothes?",
+        "Someone to talk to": "Who have you told that it's all the time, not just sometimes?",
+        "A break": "If the pressure lifted for a week, would the anxiety go with it?",
+        "Fixing the thing that's stressing me": "If the thing you can name were sorted, would the rest settle, or move somewhere else?",
+        "Understanding why I feel this way": "When did 'sometimes anxious' become 'all the time'?"
+      },
+      "professional": {
+        "Understanding why I feel this way": "gp"
+      }
     }
   },
   "pine": {
@@ -626,7 +721,7 @@
       "routes": {
         "I can't start": "Q2.Start",
         "I start but don't finish": "Q2.Finish",
-        "I'm doing everything but it doesn't feel enough": "Q4",
+        "I'm doing everything but it doesn't feel enough": "Q2.Enough",
         "I'm too busy to do the things that matter": "Q3"
       }
     },
@@ -709,6 +804,41 @@
         "To keep up with someone else": "You're working on their priority. Whose is it really?",
         "To just get it off my mind": "Completion is relief. Get it done, imperfect, then move on."
       }
+    },
+    "Q2.Enough": {
+      "question": "Who decides when it's enough?",
+      "type": "multiple_choice",
+      "answers": [
+        "Me, and I never say it is",
+        "A boss or a client",
+        "My family",
+        "Nobody, it just never feels done"
+      ],
+      "routes": {
+        "Me, and I never say it is": "Q4.Enough",
+        "A boss or a client": "Q4.Enough",
+        "My family": "Q4.Enough",
+        "Nobody, it just never feels done": "Q4.Enough"
+      }
+    },
+    "Q4.Enough": {
+      "question": "What's your actual goal here?",
+      "type": "multiple_choice",
+      "answers": [
+        "To get it done",
+        "To do it well",
+        "To prove I can",
+        "To keep up with someone else",
+        "To just get it off my mind"
+      ],
+      "routes": {},
+      "pinholes": {
+        "To get it done": "If getting it done is the goal, what stops you calling it done?",
+        "To do it well": "Where is the bar for 'well', and who set it?",
+        "To prove I can": "Prove it to whom, and what happens once you have?",
+        "To keep up with someone else": "Whose pace are you running at, and did you choose it?",
+        "To just get it off my mind": "Is it the task on your mind, or what it stands for?"
+      }
     }
   },
   "wattle": {
@@ -730,13 +860,10 @@
       ],
       "routes": {
         "Energy/tiredness": "Q2.Energy",
-        "Weight": "PINHOLE",
+        "Weight": "Q2.Weight",
         "Illness/infection": "Q3",
         "Pain": "Q3",
         "Something's off but I can't name it": "Q3"
-      },
-      "pinholes": {
-        "Weight": "Weight is often a symptom of stress, sleep, or movement changes—not the problem itself."
       }
     },
     "Q2.Energy": {
@@ -792,9 +919,14 @@
         "Nothing showed up but I still feel off": "Q4"
       },
       "pinholes": {
-        "Not yet": "See a doctor first. This conversation is second.",
-        "They said it's normal": "If they said it's normal, trust that. Your feelings are real; the pathology isn't.",
-        "They found something": "You have a diagnosis. The next step is your pathway—conventional, alternative, or both."
+        "Not yet": "What would you want the doctor to rule out first?",
+        "They said it's normal": "If it's normal on paper, what is still not normal for you?",
+        "They found something": "You have a name for it now. What do you most want to understand about it?"
+      },
+      "professional": {
+        "Not yet": "gp",
+        "They said it's normal": "gp",
+        "They found something": "gp"
       }
     },
     "Q4": {
@@ -831,6 +963,45 @@
         "Try a natural approach": "People explore different pathways. Start with what resonates.",
         "Both": "Many people do both. You might explore conventional medicine, traditional Chinese medicine, nutritional changes, movement practice.",
         "Something else": "That intuition is worth following. What are you drawn to?"
+      }
+    },
+    "Q2.Weight": {
+      "question": "Where does the weight worry sit for you?",
+      "type": "multiple_choice",
+      "answers": [
+        "How I look",
+        "How I feel in my body",
+        "A doctor or someone close has raised it",
+        "I'm not sure, it's just there"
+      ],
+      "routes": {
+        "How I look": "Q3.Weight",
+        "How I feel in my body": "Q3.Weight",
+        "A doctor or someone close has raised it": "Q3.Weight",
+        "I'm not sure, it's just there": "Q3.Weight"
+      }
+    },
+    "Q3.Weight": {
+      "question": "What do you think is driving it?",
+      "type": "multiple_choice",
+      "answers": [
+        "What I eat",
+        "How little I move",
+        "It runs in the family",
+        "Something's changed and I don't know what"
+      ],
+      "routes": {},
+      "pinholes": {
+        "What I eat": "Is it what you eat, or when and why you eat it?",
+        "How little I move": "Is it that you can't move more, or that nothing has made it stick?",
+        "It runs in the family": "If it runs in the family, which part is still yours to shift?",
+        "Something's changed and I don't know what": "Did something else change first: sleep, stress, a new medication?"
+      },
+      "professional": {
+        "What I eat": "dietitian",
+        "How little I move": "exercise_physiologist",
+        "It runs in the family": "gp",
+        "Something's changed and I don't know what": "gp"
       }
     }
   }

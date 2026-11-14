@@ -444,11 +444,16 @@ def selftest():
         _, r = answer({"session_id": sid3, "tree": "oak", "node_id": bridge.get("node_id", ""),
                        "answer_text": "Tension with someone close to me"})
         went_gum = r.get("status") == "NEXT" and r.get("next", {}).get("tree") == "gum"
+        # 2026-11-15: "I don't feel heard" no longer hands over after one tap; it asks
+        # Q2.Heard, then Q4 (depth fix, Option A).
         _, r = answer({"session_id": sid3, "tree": "gum", "node_id": "Q1", "answer_text": "I don't feel heard"})
+        asked_more = r.get("status") == "NEXT" and r.get("next", {}).get("node_id") == "Q2.Heard"
+        _, r = answer({"session_id": sid3, "tree": "gum", "node_id": "Q2.Heard", "answer_text": "They listen, then nothing changes"})
+        _, r = answer({"session_id": sid3, "tree": "gum", "node_id": "Q4", "answer_text": "They know but nothing changes"})
         _, fj = finalize({"session_id": sid3, "tree": "oak", "qa": True})
         codes.append(fj.get("share_code", ""))
         check("13 Cross-tree hand-over", bridge.get("answers") == ["Worry or stress in myself", "Tension with someone close to me", "Mostly just the money"]
-              and went_gum and r.get("status") == "RECONCILE" and fj.get("ok") is True
+              and went_gum and asked_more and r.get("status") == "RECONCILE" and fj.get("ok") is True
               and fj.get("trees") == ["oak", "gum"] and "What I've said:" in fj.get("prompt_text", ""),
               "defining question asked, carried on in Gum, one joined prompt")
         # 14. Oak wording and the "stay in Oak" route (added 2026-10-14, from Phil's first
