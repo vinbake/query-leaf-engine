@@ -118,7 +118,7 @@ def get_test_scenarios() -> list:
                 Answer("Q2.Wired", Tree.ACACIA, "Gradually"),
                 Answer("Q3", Tree.ACACIA, "Rest"),
             ],
-            expected_pinhole="burnt out"
+            expected_pinhole="rest what's missing"
         ),
 
         TestScenario(
@@ -195,7 +195,7 @@ def get_test_scenarios() -> list:
                 Answer("Q3", Tree.ACACIA, "Rest"),
                 # This creates pinholes in both trees for reconciliation detection
             ],
-            expected_pinhole="burnt out",
+            expected_pinhole="rest what's missing",
             should_reconcile=True
         ),
 

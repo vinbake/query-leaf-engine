@@ -511,6 +511,13 @@
         "Everything feels too much": "Q4",
         "I can't focus": "Q3",
         "Anxious all the time": "Q3"
+      },
+      "openings": {
+        "I can't sleep": "I can't sleep",
+        "I'm exhausted but wired": "I'm exhausted but wired",
+        "Everything feels too much": "everything feels like too much at the moment",
+        "I can't focus": "I can't focus",
+        "Anxious all the time": "I feel anxious all the time"
       }
     },
     "Q2.Sleep": {
@@ -529,7 +536,21 @@
         "Dread about something specific": "PINHOLE"
       },
       "pinholes": {
-        "Dread about something specific": "Your sleep is warning you about something. Listen to it."
+        "Dread about something specific": "Is one specific worry sitting behind the sleeplessness?"
+      },
+      "prompt": {
+        "Dread about something specific": {
+          "formulation": "my sleep is being broken by dread about one specific thing. That means the sleeplessness is probably a result, not the problem, and a sleep routine won't fix it while the thing itself is still sitting there.",
+          "ask": [
+            "help me name what the dread is really about and sort it into three piles: what I can act on this week, what I can only prepare for, and what is out of my hands. If it turns out to be money, work, a relationship or health, tell me which kind of help in Australia fits that kind of problem.",
+            "give me the plain version of what happens if I leave it and just try to sleep through it. Then tell me what to do at 3am when it is loud: one thing to write down or do, not a sleep routine. And tell me how long this should go on before it is worth seeing a GP."
+          ],
+          "services": [
+            "gp_mhtp",
+            "beyond_blue",
+            "lifeline"
+          ]
+        }
       }
     },
     "Q2.Wired": {
@@ -550,7 +571,21 @@
         "Years": "Q5"
       },
       "pinholes": {
-        "Out of nowhere": "Check: caffeine, medication, exercise changes. One thing probably shifted."
+        "Out of nowhere": "Did one thing shift lately, such as caffeine, medication or exercise?"
+      },
+      "prompt": {
+        "Out of nowhere": {
+          "formulation": "I'm exhausted but wired, and it came on suddenly. A sudden start usually means one thing changed in the last few weeks (caffeine or alcohol, a medication, how much I'm exercising, how I'm sleeping) and I haven't connected it yet.",
+          "ask": [
+            "go through the common things that change quickly and cause this feeling, including caffeine, alcohol, a medication starting, stopping or changing, a change in exercise, a change in sleep pattern, and physical causes a GP can check. Then give me the questions I can answer myself to find which one fits mine.",
+            "tell me plainly what I should NOT change on my own, especially anything to do with prescription medication, and when a sudden start like this means seeing a GP now rather than experimenting. Give me the exact words to use at the appointment."
+          ],
+          "services": [
+            "gp",
+            "healthdirect",
+            "lifeline"
+          ]
+        }
       }
     },
     "Q3": {
@@ -565,11 +600,79 @@
       ],
       "stops_narrowing": true,
       "pinholes": {
-        "Rest": "You're burnt out, not broken — you need permission to rest, not a cure.",
-        "Someone to talk to": "Being heard is the first step. Find one person.",
-        "A break": "Your nervous system needs a reset. Take it.",
-        "Fixing the thing that's stressing me": "First regulate, then solve. Sleep/movement first, solve second.",
-        "Understanding why I feel this way": "Anxiety is your signal that something needs to change — what is it?"
+        "Rest": "Is rest what's missing, more than another fix?",
+        "Someone to talk to": "Who could you talk to?",
+        "A break": "Would a proper break help more than another technique?",
+        "Fixing the thing that's stressing me": "Would fixing it be easier once sleep, food and movement are steadier?",
+        "Understanding why I feel this way": "What might need to change, and how would you find out?"
+      },
+      "prompt": {
+        "Rest": {
+          "formulation": "the thing that would make the most difference is actual rest, not another plan or fix. What I need to work out is what is stopping me taking it, and whether rest alone will be enough or something else is going on underneath.",
+          "ask": [
+            "help me find what is blocking rest for me: guilt, a workload nobody else will pick up, caring duties, money pressure, or simply not being able to switch off. For each one, give me the most realistic way around it.",
+            "give me the plain version of how long rest alone usually takes to make a difference, and the point where, if it isn't working, I should see a GP. Then lay out my real options for time off in Australia: personal/carer's leave, annual leave, and a GP medical certificate."
+          ],
+          "services": [
+            "personal_leave",
+            "gp_mhtp",
+            "lifeline"
+          ]
+        },
+        "Someone to talk to": {
+          "formulation": "what would help most right now is someone to talk to. I don't need a fix, I need to be heard by someone who takes it seriously. The hard parts are knowing who, and how to start.",
+          "ask": [
+            "help me work out who that should be for me, someone I know or a professional, and give me the actual words to start the conversation with each. Short and plain, no big speech.",
+            "if I'd rather not start with someone I know, give me the real Australian options I can use today: free, no referral, phone or chat. Then explain the GP route for ongoing sessions, including what a Mental Health Treatment Plan is and what a first appointment actually involves."
+          ],
+          "services": [
+            "beyond_blue",
+            "medicare_mhc",
+            "gp_mhtp",
+            "mindspot",
+            "headspace",
+            "lifeline"
+          ]
+        },
+        "A break": {
+          "formulation": "what would make the most difference is a proper break from whatever is draining me, not another coping technique. I need to work out what kind of break I can realistically get and what it has to include to count.",
+          "ask": [
+            "help me work out what kind of break would work for me: a few days off, a lighter load at work, a stretch of lower demands at home, or time away. Tell me what makes a break fail, for example checking email or taking the problem with me.",
+            "tell me my real options in Australia for getting one: leave types, and asking my employer for a temporary change to hours or duties. Tell me whether I would be eligible to make a formal flexible-work request, and give me the words to ask so it is taken seriously."
+          ],
+          "services": [
+            "personal_leave",
+            "flex_request",
+            "eap",
+            "gp",
+            "lifeline"
+          ]
+        },
+        "Fixing the thing that's stressing me": {
+          "formulation": "the stress has a cause I can point to and I want to fix it. The honest question is whether it can be fixed, reduced, or only carried differently, and what to do first while I work that out.",
+          "ask": [
+            "give me a way to sort what I'm dealing with into three: fixable (a decision, a conversation, a form, a debt), reducible (workload, commitments), or not fixable (something I have to carry). Give me the questions to answer myself so I can sort mine.",
+            "for each of the three, give me the first practical step in Australia. And tell me straight whether sleeping and moving first would make the fixing easier, or whether it would only delay the hard step."
+          ],
+          "services": [
+            "gp_mhtp",
+            "beyond_blue",
+            "lifeline"
+          ]
+        },
+        "Understanding why I feel this way": {
+          "formulation": "what I want most is to understand why I feel this way. I don't know if there is one cause, a pile-up of smaller things, or something I would only see with someone else's help.",
+          "ask": [
+            "give me the most common explanations for feeling like this, in plain terms: a recent change, too much for too long, something left unsaid, sleep, physical causes. Then give me the questions I can answer myself to tell which fits. Don't tell me what I have; help me narrow it down.",
+            "tell me straight what I can work out on my own and what is worth a GP or a psychologist. Give me what to say at a first GP appointment, how the Mental Health Treatment Plan and rebate work, and what a psychologist actually does in a first session."
+          ],
+          "services": [
+            "gp_mhtp",
+            "beyond_blue",
+            "mindspot",
+            "lifeline"
+          ]
+        }
       }
     },
     "Q4": {
@@ -601,11 +704,55 @@
       ],
       "stops_narrowing": true,
       "pinholes": {
-        "Temporary": "You know what to wait for. This will pass.",
-        "Ongoing": "This is your baseline. Chronic stress needs a structural change, not a fix.",
-        "It was temporary but now it's stuck": "You've been in this state so long it feels normal. It's not. Reset is possible."
+        "Temporary": "Is this tied to something with an end point?",
+        "Ongoing": "Is this the level you live at, rather than one event?",
+        "It was temporary but now it's stuck": "Did this start as temporary and stay on after the cause changed?"
+      },
+      "prompt": {
+        "Temporary": {
+          "formulation": "this feels tied to something specific that has an end point, so the job is getting through it in decent shape, not fixing my whole life. I want to know what to protect while it lasts, and what to check if the end point passes and I don't come back to normal.",
+          "ask": [
+            "help me work out what to protect while I wait it out (sleep, food, one thing that keeps me steady), what to drop or delay, and what to tell the people around me.",
+            "give me the plain version of how I'll know it's ending and not turning into something stuck. Give me the signs to watch for and a date after which I should see a GP."
+          ],
+          "services": [
+            "gp_mhtp",
+            "beyond_blue",
+            "lifeline"
+          ]
+        },
+        "Ongoing": {
+          "formulation": "this isn't tied to one event. It is the level I live at. A quick fix won't touch it. Something structural has to change (workload, hours, money, caring load, how I spend the week), and I need to find which.",
+          "ask": [
+            "help me find the structural driver. Go through load, hours, money, caring, relationships and expectations I've set for myself. Give me questions to identify which carries the most weight, and say plainly which one fits what I've told you best.",
+            "lay out the real levers I have in Australia: asking for a change to hours or duties, the GP Mental Health Treatment Plan and rebated sessions, an employer assistance program if I have one, and the free Medicare Mental Health Centres. Say which to try first and why."
+          ],
+          "services": [
+            "gp_mhtp",
+            "flex_request",
+            "eap",
+            "medicare_mhc",
+            "beyond_blue",
+            "lifeline"
+          ]
+        },
+        "It was temporary but now it's stuck": {
+          "formulation": "this started as something temporary, but it is still here after the original cause has passed or changed. I have probably got used to running this way. I don't know whether the original cause is still there or whether I've kept going at the same pace out of habit.",
+          "ask": [
+            "help me tell whether the original cause is still there or whether I'm carrying on from habit. Give me questions I can answer myself, and describe what coming back down from it would actually look like.",
+            "tell me plainly how long is too long to keep waiting before seeing a GP, what to ask for, and what a psychologist might look at with this pattern. Don't soften it, I want the real timeframe."
+          ],
+          "services": [
+            "gp_mhtp",
+            "medicare_mhc",
+            "beyond_blue",
+            "lifeline"
+          ]
+        }
       }
-    }
+    },
+    "not_generic": "general wellbeing tips",
+    "default_opening": "I'm worn down and something feels off"
   },
   "pine": {
     "name": "Pine (Productivity) — Eagle Tree",

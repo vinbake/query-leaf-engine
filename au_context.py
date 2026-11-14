@@ -127,7 +127,7 @@ def load_au_context() -> dict:
                 },
                 {
                     "name": "Headspace",
-                    "url": "www.headspace.com.au",
+                    "url": "www.headspace.org.au",
                     "description": "Mental health for under-25s, free or low-cost"
                 }
             ],
@@ -150,6 +150,23 @@ def load_au_context() -> dict:
             "sleep_specific": {
                 "gp_first": "See your GP before sleep apps; they can check for sleep apnea, medication effects",
                 "resources": "ESSA-accredited exercise physiologists often help with sleep issues"
+            },
+            # Per-pinhole service lines for the D38 spec path (2026-11-14). Each Acacia pinhole
+            # in trees_config.json names the keys that fit it. Texts verified against each
+            # service's source on 2026-11-05 (see d38-specs-acacia-draft.md for the provenance
+            # table); recheck MindSpot hours before launch (its page is dated 2025).
+            "catalogue": {
+                "lifeline": "Lifeline (13 11 14, 24 hours, lifeline.org.au): if I'm ever thinking about harming myself or I feel unsafe, I call this first, before anything else in this prompt. Text 0477 13 11 14 and online chat are also available 24 hours.",
+                "beyond_blue": "Beyond Blue Support Service (1300 22 4636, beyondblue.org.au): free phone and online (web chat) counselling for stress, anxiety and low mood. The call itself is charged at local-call rates and can cost more from a mobile.",
+                "gp_mhtp": "My GP (or a psychiatrist) can prepare a Mental Health Treatment Plan and referral so I can get Medicare-rebated sessions with a psychologist: up to 10 individual sessions a calendar year, in courses of up to 6 with a review in between. The rebate doesn't cover the whole fee, so the gap varies by provider.",
+                "medicare_mhc": "Medicare Mental Health Centre (1800 595 212, medicarementalhealth.gov.au/centres): free, no referral and no appointment needed, for anyone who needs mental health support. Check whether there is one near me.",
+                "mindspot": "MindSpot (1800 614 434, mindspot.org.au): a free mental health service run by Macquarie University (MQ Health). Phone Mon–Fri 8am–8pm, Sat 8am–6pm, Sydney time, closed NSW public holidays. Not a crisis service.",
+                "headspace": "headspace (headspace.org.au): support for young people aged 12 to 25.",
+                "gp": "My GP: the starting point for checking physical causes. If my clinic is closed, healthdirect's Service Finder (healthdirect.gov.au) can help me find another GP.",
+                "healthdirect": "Healthdirect helpline (1800 022 222, healthdirect.gov.au): registered nurses, 24 hours a day, 7 days a week, to help decide whether to see a GP, manage at home or go to an emergency department. Mobile call charges may apply. (Called Nurse-on-Call in Victoria.)",
+                "personal_leave": "Paid personal/carer's leave under the National Employment Standards: 10 days a year for full-time employees, pro rata for part-time. Casual employees don't get paid personal/carer's leave. My employer can ask for evidence that would satisfy a reasonable person, and my award or agreement may say what kind.",
+                "flex_request": "I can make a formal request to change my working arrangements if I've had at least 12 months with my employer and I'm a parent or carer of a child of school age or younger, a carer, a person with disability, 55 or older, pregnant, or experiencing family and domestic violence. My employer must answer in writing within 21 days and can only refuse on reasonable business grounds.",
+                "eap": "If my employer offers an Employee Assistance Program, it is usually confidential and free to me. Worth asking HR or checking the intranet.",
             },
             "prompt_guidance": "If ANY mention of self-harm, suicide, or feeling unsafe: include Lifeline 13 11 14 and Beyond Blue 1300 22 4636 prominently. Never position these as backup; they are THE path. For ongoing stress, always suggest GP for mental health plan."
         },
