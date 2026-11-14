@@ -19,6 +19,7 @@ Gate counting (counts.py; anonymous, to the day, no visitor identifier):
   POST /api/prompt/<code>/tap      {type: copy|open_ai|share|share_open}
   POST /api/prompt/<code>/feedback {rating: yes|partly|no, text?}
   GET  /api/metrics[?as_of=YYYY-MM-DD]   counts only, no text
+  GET  /api/review?key=… [&from=&to=&include_qa=1]   LOCKED: feedback text for the weekly review
 """
 import json
 import os
@@ -40,6 +41,8 @@ MAX_SESSIONS = 5000
 # Where a shared prompt opens. Set PUBLIC_BASE_URL when the park's address changes.
 PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "https://thequeryleaf.com.au").rstrip("/")
 CODE_IN_PATH = re.compile(r"/api/prompt/[A-Za-z0-9]{6}")
+# The weekly review read-out exposes the feedback text, so it is key-locked. Unset => endpoint off.
+REVIEW_KEY = os.environ.get("REVIEW_KEY", "")
 
 TREES = load_trees_config()
 AU = load_au_context()
@@ -306,6 +309,19 @@ def feedback(code, body):
     return (404 if reason == "unknown code" else 400), {"ok": False, "error": reason}
 
 
+def _review_authorized(provided):
+    """Constant-time key check. No key configured means the review read-out stays off."""
+    return bool(REVIEW_KEY) and secrets.compare_digest(str(provided or ""), REVIEW_KEY)
+
+
+def review_route(key, frm=None, to=None, include_qa=False):
+    """GET /api/review — locked. Without the right key it reports 'not found', so the
+    endpoint's existence is never revealed. It is the only reader of the feedback text."""
+    if not _review_authorized(key):
+        return 404, {"ok": False, "error": "not found"}
+    return 200, counts.review(frm, to, include_qa)
+
+
 def selftest():
     """Run the staging-guide checks through the same code paths as live traffic.
     Sessions created here are deleted afterwards; nothing visitor-related is stored."""
@@ -510,6 +526,12 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, counts.metrics(as_of))
         if path == "/api/reach":
             return self._send(200, reach.readout())
+        if path == "/api/review":
+            q = parse_qs(urlsplit(self.path).query)
+            key = self.headers.get("X-Review-Key") or q.get("key", [""])[0]
+            inc = q.get("include_qa", ["0"])[0] in ("1", "true", "yes")
+            code, obj = review_route(key, q.get("from", [None])[0], q.get("to", [None])[0], inc)
+            return self._send(code, obj)
         if path == "/api/entry":
             return self._send(200, {"ok": True, "entry": {
                 t: {"statement": TREES[t].get("entry_statement", ""),

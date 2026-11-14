@@ -378,3 +378,83 @@ def metrics(as_of=None):
         "qa": {"visits": qa_visits, "interactions": qa_interactions, "feedback": qa_feedback},
         "before_start": early,
     }
+
+
+# ---------- locked review read-out ----------
+# The ONE reader that loads fb_text (the "what was missing" a visitor left). metrics() above
+# never touches the text; this does, so its only route in app.py is key-locked.
+
+_FB_COLS = ("tree", "path", "root_cause", "qa", "fb_rating", "fb_text", "fb_day")
+
+
+def _load_feedback(frm, to, include_qa):
+    """Interactions that carry a feedback answer with fb_day in [frm, to]."""
+    if USE_DB:
+        where = "fb_rating IS NOT NULL AND fb_day BETWEEN %s AND %s"
+        if not include_qa:
+            where += " AND qa = false"
+        with _db() as c:
+            rows = c.execute(
+                f"SELECT {', '.join(_FB_COLS)} FROM interactions WHERE {where}", (frm, to)).fetchall()
+        return [dict(zip(_FB_COLS, r)) for r in rows]
+    with _lock:
+        out = []
+        for r in _mem_interactions.values():
+            if not r["fb_rating"] or r["fb_day"] is None:
+                continue
+            if not (frm <= r["fb_day"] <= to):
+                continue
+            if r["qa"] and not include_qa:
+                continue
+            out.append({k: r[k] for k in _FB_COLS})
+    return out
+
+
+def review(frm=None, to=None, include_qa=False):
+    """Private weekly review of the feedback text, grouped by the question path that drew it,
+    most partly/no first (the questions to rewrite first). Default window: the last 7 days.
+    Exposes fb_text, so the route that serves it is key-locked. qa rows are left out unless asked."""
+    to = _parse_day(to) or today()
+    frm = _parse_day(frm) or (to - datetime.timedelta(days=RETURN_WINDOW_DAYS - 1))
+    if frm > to:
+        frm, to = to, frm
+    try:
+        rows = _load_feedback(frm, to, bool(include_qa))
+    except Exception as e:
+        _err("review", e)
+        return {"ok": False, "error": "store error"}
+
+    nodes = {}
+    totals = {"feedback": 0, "yes": 0, "partly": 0, "no": 0, "with_text": 0}
+    for r in rows:
+        rating = r["fb_rating"]
+        if rating not in ("yes", "partly", "no"):
+            continue
+        node = nodes.setdefault(
+            (r["tree"], r["path"], r["root_cause"]),
+            {"tree": r["tree"], "path": r["path"], "root_cause": r["root_cause"],
+             "feedback": 0, "yes": 0, "partly": 0, "no": 0, "notes": []})
+        node["feedback"] += 1
+        node[rating] += 1
+        totals["feedback"] += 1
+        totals[rating] += 1
+        if r["fb_text"]:
+            day = r["fb_day"]
+            node["notes"].append({"rating": rating,
+                                  "day": day.isoformat() if hasattr(day, "isoformat") else str(day),
+                                  "text": r["fb_text"]})
+            totals["with_text"] += 1
+
+    ordered = sorted(nodes.values(),
+                     key=lambda n: (-(n["partly"] + n["no"]), -n["feedback"], n["tree"], n["path"]))
+    return {
+        "ok": True,
+        "from": frm.isoformat(),
+        "to": to.isoformat(),
+        "store": "postgres" if USE_DB else "memory",
+        "include_qa": bool(include_qa),
+        "totals": totals,
+        "nodes": ordered,
+        "note": "Locked review of the feedback text visitors left ('what was missing'), by question path, "
+                "most partly/no first. Not a gate number. Test (qa) rows are excluded unless include_qa.",
+    }
